@@ -1,0 +1,9 @@
+{
+  "encounter_id": "ENC-SYN-1",
+  "allergies": ["penicillin"],
+  "medications": ["metformin"],
+  "findings": [
+    {"concept": "pleural effusion", "present": false},
+    {"concept": "fever", "present": true}
+  ]
+}

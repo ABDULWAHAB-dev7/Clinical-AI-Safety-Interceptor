@@ -66,3 +66,37 @@ tests/                   unit and example-file tests
 - Authentication, audit logging, and rate limiting for the HTTP endpoint
 - Integration with a specific clinical AI system or EHR
 - Clinical validation with clinicians
+
+---
+
+## Document gate (PRD v0.1)
+
+`gate/` implements the PRD: it checks a generated clinical document (SOAP note, discharge summary, report draft) against the patient record before it reaches the EHR or signing queue. It flags and gates; a clinician remains the final authority.
+
+| Journey | Condition | Status |
+|---|---|---|
+| A | All spans supported | `ready_for_review` |
+| B | Any span ungrounded (no record evidence), none contradicted | `flagged_for_acknowledgment`; each flagged span must be accepted, edited or rejected before signing |
+| C | Any span contradicted by the record (polarity conflict) | `quarantined`; not delivered; override needs a reason and approver ID |
+| D | Verification error or timeout | `quarantined_verification_unavailable` (fail-closed). Fail-open only with a `FailOpenRule` per facility and document type, logged as `released_unverified` |
+
+Every gate result, acknowledgment and override is written to a hash-chained JSONL audit log (`gate/audit.py`).
+
+```bash
+python -m gate verify examples/draft_clean.json examples/record.json --facility Facility-A --audit audit.jsonl
+python -m gate verify examples/draft_flagged.json examples/record.json --facility Facility-A   # exit 1
+python -m gate verify examples/draft_contradicted.json examples/record.json --facility Facility-A  # exit 2
+python -m gate audit-verify audit.jsonl
+```
+
+Python API: `run_gate`, `ReviewSession`, `override`, `FailOpenRule`, `AuditLog` (see `gate/__init__.py`).
+
+### Open questions from the PRD (not implemented; no behaviour assumed)
+
+- **Section 5 / FR-5.x is missing from the PRD.** The hard-stop rules (FR-5.2), the override path details (FR-5.4) and the non-clinical classification (5.2) are not specified. Only polarity conflicts are hard stops today.
+- **Latency budget** is not given, so no timeout is enforced; verification errors are the only fail-mode trigger.
+- **NLI model** for "high-confidence contradiction" is not chosen; verification is rule-based and lexical.
+- **Atomic assertion decomposition** is sentence-level. Unit, date and value checks (for example a lab value with the wrong unit) are not implemented.
+- **Encounter record source**: FHIR integration is required by the CIO but no resource mapping is given. `examples/record.json` is a flat synthetic format.
+- **Audit schema** is a placeholder format.
+- **Who may approve overrides and fail-open** (roles, Compliance workflow) is not defined.
