@@ -1,8 +1,8 @@
 import unittest
 
-from core.decompose import decompose
-from core.errors import ErrorClass, PipelineError
-from core.models import AssertionType
+from interceptor.core.decompose import decompose
+from interceptor.core.errors import ErrorClass, PipelineError
+from interceptor.core.models import AssertionType
 from tests.support import load_example
 
 

@@ -1,6 +1,6 @@
 import unittest
 
-from core.verify import VerificationError, verify_claim
+from interceptor.core.verify import VerificationError, verify_claim
 from tests.support_verify import KNOWLEDGE, FakeNli, case_triples, with_thresholds
 from tools.gold_check_verify import run_gold_check
 

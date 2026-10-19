@@ -1,9 +1,9 @@
 import unittest
 import uuid
 
-from core.categories import classification_for, explanation, hallucination_category
-from core.contracts import CodeSystem, NLIClass, RiskSeverity, VerificationResult
-from core.entities import Entity
+from interceptor.core.categories import classification_for, explanation, hallucination_category
+from interceptor.core.contracts import CodeSystem, NLIClass, RiskSeverity, VerificationResult
+from interceptor.core.entities import Entity
 from tests.support_verify import KNOWLEDGE
 
 ALLERGY = Entity(CodeSystem.SNOMED_CT, "416098002", "Drug allergy", "drug allergies", 0, 14)

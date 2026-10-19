@@ -18,9 +18,9 @@ import httpx
 import jwt
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "src"))
 
-from core.pseudo import patient_pseudo_id  # noqa: E402
+from interceptor.core.pseudo import patient_pseudo_id  # noqa: E402
 
 NOTE = ("Chief complaint: Follow-up for type 2 diabetes. Patient denies known drug allergies. HbA1c 8.2% on "
         "2026-09-02. Started amoxicillin 500 mg TID for sinusitis. Blood pressure stable.")

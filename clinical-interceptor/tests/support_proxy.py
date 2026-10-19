@@ -5,11 +5,11 @@ import json
 import httpx
 from fastapi.testclient import TestClient
 
-from api.app import create_app
-from api.auth import JwtVerifier
-from core.pseudo import patient_pseudo_id
-from intercept.upstream import UpstreamClient
-from store.records import MemoryAuditStore
+from interceptor.api.app import create_app
+from interceptor.api.auth import JwtVerifier
+from interceptor.core.pseudo import patient_pseudo_id
+from interceptor.intercept.upstream import UpstreamClient
+from interceptor.store.records import MemoryAuditStore
 from tests.support import FHIR_DIR, POLICY_PATH, PUBLIC_PEM, security
 from tests.support_bundle import BUNDLE, MRN
 

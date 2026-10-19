@@ -9,9 +9,9 @@ import uuid
 
 from fastapi.testclient import TestClient
 
-from api.app import create_app
-from api.auth import JwtVerifier
-from api.schemas import (
+from interceptor.api.app import create_app
+from interceptor.api.auth import JwtVerifier
+from interceptor.api.schemas import (
     AuditReport,
     ChatCompletion,
     DecomposeResponse,
@@ -19,12 +19,11 @@ from api.schemas import (
     NoteView,
     VerifyResponse,
 )
-from store.records import MemoryAuditStore
+from interceptor.store.records import MemoryAuditStore
 from tests.support import FHIR_DIR, POLICY_PATH, PUBLIC_PEM, auth_headers, security
 from tests.support_bundle import BUNDLE
 from tests.support_proxy import KEY, PID, MockUpstream, chat_body
 from tests.unit.test_audit_api import NOTE, result_for
-
 
 # API.md 5.1.2: the decompose example request
 DECOMPOSE_EXAMPLE = {

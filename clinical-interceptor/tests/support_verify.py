@@ -2,9 +2,9 @@
 
 import dataclasses
 
-from core.knowledge import load_knowledge
-from fhir.ingest import ingest, load_ndjson
-from fhir.triples import triples_from_ingest
+from interceptor.core.knowledge import load_knowledge
+from interceptor.fhir.ingest import ingest, load_ndjson
+from interceptor.fhir.triples import triples_from_ingest
 from tests.support import ROOT
 
 KNOWLEDGE = load_knowledge()

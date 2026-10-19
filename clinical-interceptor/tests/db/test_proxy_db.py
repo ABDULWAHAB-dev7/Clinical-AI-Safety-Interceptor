@@ -9,9 +9,9 @@ import unittest
 
 import psycopg
 
-from store import postgres as db
+from interceptor.store import postgres as db
 from tests.support import auth_headers
-from tests.support_proxy import OUTPUT, chat_body, make_app, MockUpstream
+from tests.support_proxy import OUTPUT, chat_body, make_app
 from tests.unit import test_proxy_stream as streams
 
 DSN = os.environ.get("INTERCEPTOR_TEST_DSN")
@@ -71,7 +71,7 @@ class PgNonStreamingTests(PgMixin, unittest.TestCase):
         events = self.rows("SELECT category, risk_severity FROM hallucination_events")
         self.assertEqual(sorted(events), [("DRUG_ALLERGY_CONFLICT", "CRITICAL")] * 2)
         trace = r.json()["interception"]["trace_id"]
-        self.assertEqual(self.rows(f"SELECT stage FROM audit_traces WHERE trace_id = '{trace}'")[0][0], "INTERCEPT")
+        self.assertEqual(self.rows(f"SELECT stage FROM audit_traces WHERE trace_id = '{trace}'")[0][0], "INTERCEPT")  # noqa: S608
 
     def test_event_ids_in_the_response_exist_in_the_database(self):
         r = self.client.post("/v1/chat/completions/intercept", json=chat_body(), headers=auth_headers())

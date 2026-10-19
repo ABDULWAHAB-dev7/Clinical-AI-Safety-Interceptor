@@ -6,13 +6,13 @@ import tempfile
 import unittest
 from unittest import mock
 
-from api.app import create_app
-from core import pipeline
-from core.errors import ErrorClass, PipelineError
-from core.models import Outcome, Verdict
-from core.pipeline import verify_document
-from core.policy import load_policy
-from store.records import MemoryAuditStore
+from interceptor.api.app import create_app
+from interceptor.core import pipeline
+from interceptor.core.errors import ErrorClass, PipelineError
+from interceptor.core.models import Outcome, Verdict
+from interceptor.core.pipeline import verify_document
+from interceptor.core.policy import load_policy
+from interceptor.store.records import MemoryAuditStore
 from tests.support import FHIR_DIR, POLICY_PATH, load_example
 
 KEY = b"fail-mode-test-key-0123456789"

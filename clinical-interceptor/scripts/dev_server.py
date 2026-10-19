@@ -16,11 +16,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "src"))
 
 import uvicorn  # noqa: E402
 
-from api.dev_tls import MtlsH11Protocol  # noqa: E402
+from interceptor.api.dev_tls import MtlsH11Protocol  # noqa: E402
 
 
 def main():
@@ -35,7 +35,7 @@ def main():
     os.environ.setdefault("INTERCEPTOR_JWT_PUBLIC_KEY_FILE", str(certs / "jwt_public.pem"))
 
     uvicorn.run(
-        "api.app:build_default_app",
+        "interceptor.api.app:build_default_app",
         factory=True,
         host=args.host,
         port=args.port,

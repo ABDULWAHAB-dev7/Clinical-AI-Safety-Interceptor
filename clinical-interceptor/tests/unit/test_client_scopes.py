@@ -8,12 +8,12 @@ import uuid
 
 from fastapi.testclient import TestClient
 
-from api.app import create_app
-from api.auth import JwtVerifier
-from api.mtls import MtlsConfig
-from api.ratelimit import RateLimiter
-from core.pseudo import patient_pseudo_id
-from store.records import MemoryAuditStore
+from interceptor.api.app import create_app
+from interceptor.api.auth import JwtVerifier
+from interceptor.api.mtls import MtlsConfig
+from interceptor.api.ratelimit import RateLimiter
+from interceptor.core.pseudo import patient_pseudo_id
+from interceptor.store.records import MemoryAuditStore
 from tests.support import (
     CLIENT_FINGERPRINT,
     CLIENT_ID,

@@ -4,11 +4,11 @@ import shutil
 import tempfile
 import unittest
 
-from core.contracts import CodeSystem
-from core.errors import ErrorClass, PipelineError
-from core.knowledge import KNOWLEDGE_DIR, load_knowledge
-from fhir.ingest import ingest
-from fhir.triples import triples_from_ingest, verbalize
+from interceptor.core.contracts import CodeSystem
+from interceptor.core.errors import ErrorClass, PipelineError
+from interceptor.core.knowledge import KNOWLEDGE_DIR, load_knowledge
+from interceptor.fhir.ingest import ingest
+from interceptor.fhir.triples import triples_from_ingest, verbalize
 from tests.support_verify import KNOWLEDGE, case_triples
 
 PATIENT = {"resourceType": "Patient", "id": "pat-1", "identifier": [{"system": "urn:synthetic:mrn", "value": "X"}],

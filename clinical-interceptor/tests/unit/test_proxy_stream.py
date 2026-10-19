@@ -3,10 +3,10 @@ import unittest
 
 import httpx
 
-from core.errors import ErrorClass, PipelineError
-from store.records import MemoryAuditStore
+from interceptor.core.errors import ErrorClass, PipelineError
+from interceptor.store.records import MemoryAuditStore
 from tests.support import auth_headers
-from tests.support_proxy import MockUpstream, OUTPUT, REDACTED_OUTPUT, chat_body, make_app, read_sse
+from tests.support_proxy import OUTPUT, REDACTED_OUTPUT, MockUpstream, chat_body, make_app, read_sse
 from tests.support_verify import FakeNli
 
 URL = "/v1/chat/completions/intercept"
@@ -298,8 +298,8 @@ class StreamFailClosedTests(StreamBase):
                          (504, "INTERCEPT_UPSTREAM_TIMEOUT"))
 
     def test_upstream_failure_mid_stream_is_an_error_event_and_the_note_is_marked_failed(self):
-        first = ('data: {"choices": [{"delta": {"content": "HbA1c 8.2% on 2026-09-02. HbA1c "},'
-                 '"finish_reason": null}]}\n\n').encode()
+        first = (b'data: {"choices": [{"delta": {"content": "HbA1c 8.2% on 2026-09-02. HbA1c "},'
+                 b'"finish_reason": null}]}\n\n')
 
         def handler(request):
             return httpx.Response(200, stream=BrokenBody(first), headers={"content-type": "text/event-stream"})
@@ -314,7 +314,7 @@ class StreamFailClosedTests(StreamBase):
     def test_an_internal_fault_mid_stream_is_an_error_event_not_a_crash(self):
         from unittest import mock
 
-        with mock.patch("intercept.stream.verify_unit", side_effect=RuntimeError("bug")):
+        with mock.patch("interceptor.intercept.stream.verify_unit", side_effect=RuntimeError("bug")):
             self.go()
         self.assert_failed_closed("INTERCEPT_INTERNAL_ERROR")
         self.assertEqual(self.contents(), [])

@@ -9,8 +9,8 @@ import uuid
 
 import psycopg
 
-from store import postgres as db
-from store.records import EventRecord, StageRecord
+from interceptor.store import postgres as db
+from interceptor.store.records import EventRecord, StageRecord
 from tests.unit import test_audit_api as base
 
 DSN = os.environ.get("INTERCEPTOR_TEST_DSN")

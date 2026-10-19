@@ -2,14 +2,15 @@ import copy
 import json
 import unittest
 import uuid
+from datetime import UTC
 
 from fastapi.testclient import TestClient
 
-from api.app import create_app
-from api.auth import JwtVerifier
-from api.interceptor import _idempotency_scope
-from core.pseudo import patient_pseudo_id
-from store.records import MemoryAuditStore, StageRecord
+from interceptor.api.app import create_app
+from interceptor.api.auth import JwtVerifier
+from interceptor.api.interceptor import _idempotency_scope
+from interceptor.core.pseudo import patient_pseudo_id
+from interceptor.store.records import MemoryAuditStore, StageRecord
 from tests.support import FHIR_DIR, POLICY_PATH, PUBLIC_PEM, auth_headers, security
 
 KEY = b"audit-api-test-key-0123456789"
@@ -144,8 +145,8 @@ class AuditEndpointTests(AuditBase):
     def test_expired_keys_are_forgotten(self):
         if not self.is_memory():
             self.skipTest("needs a controllable clock; the PostgreSQL TTL is checked in the database tests")
-        from datetime import datetime, timedelta, timezone
-        now = [datetime(2026, 10, 19, tzinfo=timezone.utc)]
+        from datetime import datetime, timedelta
+        now = [datetime(2026, 10, 19, tzinfo=UTC)]
         self.store.clock = lambda: now[0]
         key = str(uuid.uuid4())
         body = self.body()

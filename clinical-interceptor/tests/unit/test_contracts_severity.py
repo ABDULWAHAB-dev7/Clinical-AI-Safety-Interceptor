@@ -3,7 +3,7 @@ import uuid
 
 from pydantic import ValidationError
 
-from core.contracts import (
+from interceptor.core.contracts import (
     AtomicProposition,
     AttributionClass,
     AttributionSpan,
@@ -13,9 +13,9 @@ from core.contracts import (
     RiskSeverity,
     VerificationResult,
 )
-from core.pseudo import EID_PATTERN, PID_PATTERN, encounter_pseudo_id, patient_pseudo_id
-from core.severity import ClaimFacts, classify_risk
-from core.terminology import entity_kind, matches_allergy
+from interceptor.core.pseudo import EID_PATTERN, PID_PATTERN, encounter_pseudo_id, patient_pseudo_id
+from interceptor.core.severity import ClaimFacts, classify_risk
+from interceptor.core.terminology import entity_kind, matches_allergy
 
 KEY = b"unit-test-key-0123456789"
 NOTE = uuid.UUID("00000000-0000-4000-8000-0000000000aa")

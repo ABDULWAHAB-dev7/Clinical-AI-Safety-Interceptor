@@ -8,9 +8,9 @@ import unittest
 
 import psycopg
 
-from core.pipeline import verify_document
-from core.policy import load_policy
-from store import postgres as db
+from interceptor.core.pipeline import verify_document
+from interceptor.core.policy import load_policy
+from interceptor.store import postgres as db
 from tests.support import FHIR_DIR, POLICY_PATH, load_example
 
 DSN = os.environ.get("INTERCEPTOR_TEST_DSN")

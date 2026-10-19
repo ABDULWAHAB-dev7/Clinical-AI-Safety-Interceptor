@@ -39,8 +39,8 @@ def make_token(scope=ALL_SCOPES, *, lifetime=600, aud="clinical-interceptor", ke
 # ---- client certificate identity: a registered fingerprint, forwarded by a trusted "proxy" (the test client) ----
 import hashlib  # noqa: E402
 
-from api.mtls import MtlsConfig  # noqa: E402
-from api.ratelimit import RateLimiter  # noqa: E402
+from interceptor.api.mtls import MtlsConfig  # noqa: E402
+from interceptor.api.ratelimit import RateLimiter  # noqa: E402
 
 CLIENT_ID = "client-test"
 CLIENT_FINGERPRINT = hashlib.sha256(b"test-client-certificate").hexdigest()

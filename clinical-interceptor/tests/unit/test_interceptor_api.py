@@ -5,21 +5,20 @@ import uuid
 
 from fastapi.testclient import TestClient
 
-from api.app import create_app
-from api.auth import JwtVerifier
-from core.pseudo import patient_pseudo_id
-from store.records import MemoryAuditStore
-from tests.support_bundle import BUNDLE, MRN
+from interceptor.api.app import create_app
+from interceptor.api.auth import JwtVerifier
+from interceptor.core.pseudo import patient_pseudo_id
+from interceptor.store.records import MemoryAuditStore
 from tests.support import (
-    security,
-    mtls_headers,
-    ALL_SCOPES,
     FHIR_DIR,
     POLICY_PATH,
     PUBLIC_PEM,
     auth_headers,
     make_token,
+    mtls_headers,
+    security,
 )
+from tests.support_bundle import BUNDLE, MRN
 
 KEY = b"interceptor-api-test-key-01234"
 IDEM = {"Idempotency-Key": str(uuid.uuid4())}
@@ -88,8 +87,8 @@ class AuthTests(Base):
                           401, "AUTH_TOKEN_INVALID")
 
     def test_token_signed_by_another_key_is_401(self):
-        from cryptography.hazmat.primitives.asymmetric import ec
         from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import ec
         other = ec.generate_private_key(ec.SECP256R1()).private_bytes(
             serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())
         headers = {"Authorization": f"Bearer {make_token(key=other)}"} | mtls_headers()
@@ -171,7 +170,7 @@ class DecomposeTests(Base):
         sha = hashlib.sha256(NOTE.encode("utf-8")).hexdigest()
         first = body["claims"][0]
         expected = "clm_" + hashlib.sha256(
-            f"{sha}:{first['char_start']}:{first['char_end']}:{first['claim_text']}".encode("utf-8")
+            f"{sha}:{first['char_start']}:{first['char_end']}:{first['claim_text']}".encode()
         ).hexdigest()[:12]
         self.assertEqual(first["claim_id"], expected)
 

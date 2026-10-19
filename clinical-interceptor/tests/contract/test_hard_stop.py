@@ -2,9 +2,9 @@
 
 import unittest
 
-from core.errors import ErrorClass
-from core.models import AssertionType, Outcome, Verdict, VerdictRecord
-from core.policy import C1, R1, R2, R3, R4, Policy, decide
+from interceptor.core.errors import ErrorClass
+from interceptor.core.models import AssertionType, Outcome, Verdict, VerdictRecord
+from interceptor.core.policy import C1, R1, R2, R3, R4, Policy, decide
 
 POLICY = Policy("contract", frozenset({"soap_note"}), 0.85, 0.85, 0.0)
 

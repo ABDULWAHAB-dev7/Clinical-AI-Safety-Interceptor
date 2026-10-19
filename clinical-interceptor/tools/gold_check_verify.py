@@ -14,14 +14,14 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "src"))
 
-from core.contracts import CodeSystem  # noqa: E402
-from core.entities import Entity  # noqa: E402
-from core.knowledge import load_knowledge  # noqa: E402
-from core.verify import VerificationError, verify_claim  # noqa: E402
-from fhir.ingest import ingest, load_ndjson  # noqa: E402
-from fhir.triples import triples_from_ingest  # noqa: E402
+from interceptor.core.contracts import CodeSystem  # noqa: E402
+from interceptor.core.entities import Entity  # noqa: E402
+from interceptor.core.knowledge import load_knowledge  # noqa: E402
+from interceptor.core.verify import VerificationError, verify_claim  # noqa: E402
+from interceptor.fhir.ingest import ingest, load_ndjson  # noqa: E402
+from interceptor.fhir.triples import triples_from_ingest  # noqa: E402
 
 SEED = ROOT / "seed"
 FIELDS = (

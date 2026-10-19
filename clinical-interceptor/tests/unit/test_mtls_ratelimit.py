@@ -5,17 +5,16 @@ import uuid
 
 from fastapi.testclient import TestClient
 
-from api.app import create_app
-from api.auth import JwtVerifier
-from api.mtls import MtlsConfig, fingerprint_of_pem, identify_client, presented_fingerprint
-from api.ratelimit import RateLimiter
-from core.pseudo import patient_pseudo_id
-from store.records import MemoryAuditStore
+from interceptor.api.app import create_app
+from interceptor.api.auth import JwtVerifier
+from interceptor.api.mtls import MtlsConfig, fingerprint_of_pem, identify_client, presented_fingerprint
+from interceptor.api.ratelimit import RateLimiter
+from interceptor.core.pseudo import patient_pseudo_id
+from interceptor.store.records import MemoryAuditStore
 from tests.support import (
     CLIENT_FINGERPRINT,
     FHIR_DIR,
     POLICY_PATH,
-    PROXY_SECRET,
     PUBLIC_PEM,
     UNREGISTERED_FINGERPRINT,
     auth_headers,

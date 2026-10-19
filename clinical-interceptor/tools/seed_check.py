@@ -16,15 +16,14 @@ import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "src"))
 
 from pydantic import ValidationError  # noqa: E402
 
-from core.contracts import AtomicProposition, CodeSystem, MedicalEntity, NLIClass  # noqa: E402
-from core.severity import ClaimFacts, classify_risk  # noqa: E402
-from core.terminology import entity_kind, matches_allergy  # noqa: E402
-from fhir.ingest import ingest, load_ndjson  # noqa: E402
-from fhir.models import AllergyIntolerance, Condition  # noqa: E402
+from interceptor.core.contracts import AtomicProposition, CodeSystem, MedicalEntity, NLIClass  # noqa: E402
+from interceptor.core.severity import ClaimFacts, classify_risk  # noqa: E402
+from interceptor.core.terminology import entity_kind, matches_allergy  # noqa: E402
+from interceptor.fhir.ingest import ingest, load_ndjson  # noqa: E402
 
 SEED = ROOT / "seed"
 NOTE_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")  # fixed, so the seed is reproducible

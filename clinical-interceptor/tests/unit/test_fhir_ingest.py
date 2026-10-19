@@ -1,8 +1,8 @@
 import copy
 import unittest
 
-from fhir.ingest import ingest, load_ndjson
-from fhir.models import Observation, Patient
+from interceptor.fhir.ingest import ingest, load_ndjson
+from interceptor.fhir.models import Observation, Patient
 from tests.support import ROOT
 
 SEED_FHIR = ROOT / "seed" / "fhir"

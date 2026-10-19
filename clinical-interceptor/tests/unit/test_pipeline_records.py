@@ -1,9 +1,9 @@
 import re
 import unittest
 
-from core.pipeline import verify_document
-from core.policy import load_policy
-from store.records import MemoryAuditStore
+from interceptor.core.pipeline import verify_document
+from interceptor.core.policy import load_policy
+from interceptor.store.records import MemoryAuditStore
 from tests.support import FHIR_DIR, POLICY_PATH, load_example
 
 KEY = b"records-test-key-0123456789ab"

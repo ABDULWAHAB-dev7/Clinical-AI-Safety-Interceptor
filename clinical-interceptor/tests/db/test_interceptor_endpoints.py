@@ -10,10 +10,10 @@ import uuid
 import psycopg
 from fastapi.testclient import TestClient
 
-from api.app import create_app
-from api.auth import JwtVerifier
-from store import postgres as db
-from tests.support import security, mtls_headers, POLICY_PATH, FHIR_DIR, PUBLIC_PEM, auth_headers
+from interceptor.api.app import create_app
+from interceptor.api.auth import JwtVerifier
+from interceptor.store import postgres as db
+from tests.support import FHIR_DIR, POLICY_PATH, PUBLIC_PEM, auth_headers, security
 from tests.support_bundle import BUNDLE
 from tests.unit.test_interceptor_api import KEY, PID, decompose_body
 

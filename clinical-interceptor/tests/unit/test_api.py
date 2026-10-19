@@ -9,10 +9,19 @@ import unittest
 
 from fastapi.testclient import TestClient
 
-from api.app import create_app
-from api.auth import JwtVerifier
-from store.records import MemoryAuditStore
-from tests.support import security, mtls_headers, FHIR_DIR, POLICY_PATH, PUBLIC_PEM, auth_headers, load_example, make_token
+from interceptor.api.app import create_app
+from interceptor.api.auth import JwtVerifier
+from interceptor.store.records import MemoryAuditStore
+from tests.support import (
+    FHIR_DIR,
+    POLICY_PATH,
+    PUBLIC_PEM,
+    auth_headers,
+    load_example,
+    make_token,
+    mtls_headers,
+    security,
+)
 
 KEY = b"api-test-key-0123456789abcdef"
 

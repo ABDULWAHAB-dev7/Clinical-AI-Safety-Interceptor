@@ -2,8 +2,8 @@ import pathlib
 import tempfile
 import unittest
 
-from core.errors import ErrorClass, PipelineError
-from core.policy import load_policy
+from interceptor.core.errors import ErrorClass, PipelineError
+from interceptor.core.policy import load_policy
 from tests.support import POLICY_PATH
 
 VALID = """policy_version: "9.9.9"

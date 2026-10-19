@@ -3,9 +3,9 @@ import pathlib
 import tempfile
 import unittest
 
-from core.errors import ErrorClass, PipelineError
-from core.verify import verify_claim
-from nli.scorer import NLIScorer, directory_sha256
+from interceptor.core.errors import ErrorClass, PipelineError
+from interceptor.core.verify import verify_claim
+from interceptor.nli.scorer import NLIScorer, directory_sha256
 from tests.support_verify import KNOWLEDGE, case_triples
 
 

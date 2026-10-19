@@ -46,11 +46,16 @@ and the key, and refuses every clinical request until the registry and the token
 ## Layout
 
 ```
-core/      domain models, errors, policy, decomposition, attribution, pipeline (no I/O imports)
-fhir/      encounter bundle loading and parsing
-nli/       deterministic verifiers (pure) and the NLI interface
-store/     PostgreSQL repository and in-memory store for tests
-api/       FastAPI app and uvicorn factory
+src/interceptor/
+  core/      domain models, errors, policy, decomposition, attribution, pipeline (no I/O imports)
+  fhir/      encounter bundle loading and parsing
+  nli/       deterministic verifiers (pure), the NLI interface and the model loader
+  store/     PostgreSQL repository and in-memory store for tests
+  api/       FastAPI app, auth, endpoints and uvicorn factory
+  intercept/ proxy release policy, analysis, upstream client, streaming
+  paths.py   PROJECT_ROOT (override with INTERCEPTOR_HOME) for data directories
+knowledge/ synthetic lexicon and thresholds (require clinical review)
+db/        schema.sql;  migrations/  Alembic
 config/    versioned policy file
 fixtures/  synthetic FHIR bundles
 examples/  sample requests (clean and contradicted)
@@ -58,7 +63,7 @@ tests/     unit, contract (hard-stop rules), fail_mode (failure injection), API
 docs/policy-changes/  change records for hard-stop rule releases (FR-5.2)
 ```
 
-Deviations from the architecture's directory tree: `tests/` uses `unit/`, `contract/`, `fail_mode/`, and the API test sits in `unit/`. `core/` is flat (no `decompose/`, `policy/` or `ids.py` subpackages yet). Both are tidy-up items.
+Module names below are relative to `src/interceptor/`. Deviations from the architecture's directory tree: `tests/` uses `unit/`, `contract/`, `fail_mode/`, and the API test sits in `unit/`. `core/` is flat (no `decompose/`, `policy/` or `ids.py` subpackages yet). Both are tidy-up items.
 
 ## Blocked before build (architecture 10.1)
 
@@ -247,4 +252,5 @@ How a claim is classified, in order: medication claims (NEUTRAL, or CONTRADICTIO
 - **Medication claims are always NEUTRAL** unless the dose is over the limit, because the FHIR subset has no medication facts. Rule 1 still sets CRITICAL on top of that, and the NLI class stays NEUTRAL as in the gold labels.
 - **Gold offsets:** the plan's required test for "drug allergies" (offsets 66 to 80) is wrong for the actual note. The text has it at 69 to 83, which is what the code and tests use.
 - **The gold check runs the verifier on gold claims and gold entities.** The plan's full decompose-then-verify check is not possible yet: the rule-based decomposer does not reproduce the gold claim spans (for example the gold claim for "type 2 diabetes" starts at 31, after the prefix "Follow-up for").
-- **Layout:** these modules are in the current `core/`, `fhir/` layout, not `src/interceptor/`. The migration waits on preflight.
+- **Layout:** the code is in `src/interceptor/` as the plan asks. Module paths in this README are relative to that package.
+- **Tooling:** `python scripts/check.py` runs ruff, mypy and the tests. Deviations from the plan: line length is 120 (not 100); ruff ignores E501, B904, B905 and UP042 for now (long lines, exception chaining, `zip(strict=)`, `StrEnum`), and the code is not formatted with `ruff format` (`--format` checks it); mypy runs in default mode and is clean, but `--strict` reports 664 findings, mostly missing annotations. `docker-compose.yml` is untested because Docker was not available.

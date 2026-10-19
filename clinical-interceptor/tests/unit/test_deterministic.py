@@ -1,12 +1,12 @@
 import unittest
 
-from core.decompose import decompose
-from core.errors import ErrorClass, PipelineError
-from core.models import Verdict
-from fhir.bundle import ContextBundle, Named, Observation
-from nli.deterministic import verify
-from nli.model import nli_verdict, verdict_from_scores
-from core.policy import Policy
+from interceptor.core.decompose import decompose
+from interceptor.core.errors import ErrorClass, PipelineError
+from interceptor.core.models import Verdict
+from interceptor.core.policy import Policy
+from interceptor.fhir.bundle import ContextBundle, Named, Observation
+from interceptor.nli.deterministic import verify
+from interceptor.nli.model import nli_verdict, verdict_from_scores
 
 BUNDLE = ContextBundle(
     encounter_ref="ENC-T",

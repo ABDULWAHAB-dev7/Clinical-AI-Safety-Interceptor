@@ -12,7 +12,7 @@ import unittest
 import psycopg
 from psycopg import errors
 
-from store import postgres as db
+from interceptor.store import postgres as db
 
 DSN = os.environ.get("INTERCEPTOR_TEST_DSN")
 PID = "pid_" + "a" * 64

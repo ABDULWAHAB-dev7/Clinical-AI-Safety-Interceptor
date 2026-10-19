@@ -1,8 +1,8 @@
 import unittest
 
-from core.contracts import NLIClass
-from intercept.analysis import SAFE_GAP, analyze, verify_unit
-from intercept.policy import (
+from interceptor.core.contracts import NLIClass
+from interceptor.intercept.analysis import SAFE_GAP, analyze, verify_unit
+from interceptor.intercept.policy import (
     ANNOTATED,
     BLOCK,
     REDACTED,
@@ -84,7 +84,7 @@ class AnalysisTests(unittest.TestCase):
         self.assertEqual((units[0].start, units[0].end), (0, 36))
 
     def test_claim_ids_follow_the_spec_derivation(self):
-        from core.claims import claim_id_for
+        from interceptor.core.claims import claim_id_for
 
         unit = self.units(OUTPUT)[0]
         claim = unit.claim

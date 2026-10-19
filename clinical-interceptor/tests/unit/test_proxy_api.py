@@ -7,7 +7,7 @@ import httpx
 
 from tests.support import auth_headers
 from tests.support_bundle import BUNDLE
-from tests.support_proxy import MODEL, OUTPUT, PID, REDACTED_OUTPUT, MockUpstream, chat_body, make_app
+from tests.support_proxy import MODEL, OUTPUT, REDACTED_OUTPUT, MockUpstream, chat_body, make_app
 from tests.support_verify import FakeNli
 
 URL = "/v1/chat/completions/intercept"
@@ -24,7 +24,7 @@ def interception(response):
 
 class ProxyBase(unittest.TestCase):
     def make_store(self):
-        from store.records import MemoryAuditStore
+        from interceptor.store.records import MemoryAuditStore
 
         return MemoryAuditStore()
 
@@ -272,7 +272,7 @@ class UpstreamFailureTests(ProxyBase):
 
 class AuditFailClosedTests(ProxyBase):
     def test_audit_failure_returns_503_and_no_content(self):
-        from store.records import MemoryAuditStore
+        from interceptor.store.records import MemoryAuditStore
 
         self.make(store=MemoryAuditStore(fail=True))
         r = post(self.client)
@@ -282,7 +282,7 @@ class AuditFailClosedTests(ProxyBase):
         self.assertNotIn("HbA1c", r.text)  # none of the upstream text is in the error
 
     def test_audit_failure_blocks_even_an_all_safe_output(self):
-        from store.records import MemoryAuditStore
+        from interceptor.store.records import MemoryAuditStore
 
         self.make(upstream=MockUpstream(text="HbA1c 8.2% on 2026-09-02."), store=MemoryAuditStore(fail=True))
         r = post(self.client)

@@ -1,11 +1,11 @@
 import unittest
 from dataclasses import replace
 
-from core.contracts import CodeSystem
-from core.dosage import check_dose, parse_dose
-from core.entities import link_entities
-from core.knowledge import DoseLimit
-from core.retrieval import MAX_CANDIDATES, retrieve
+from interceptor.core.contracts import CodeSystem
+from interceptor.core.dosage import check_dose, parse_dose
+from interceptor.core.entities import link_entities
+from interceptor.core.knowledge import DoseLimit
+from interceptor.core.retrieval import MAX_CANDIDATES, retrieve
 from tests.support import ROOT
 from tests.support_verify import KNOWLEDGE, case_triples
 
