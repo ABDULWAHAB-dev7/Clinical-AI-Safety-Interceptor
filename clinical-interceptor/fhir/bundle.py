@@ -67,6 +67,11 @@ def load_bundle(encounter_ref, fixture_dir):
         raw = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         raise PipelineError(ErrorClass.RETRIEVAL_UNAVAILABLE, "encounter bundle unavailable")
+    return parse_bundle(raw, encounter_ref)
+
+
+def parse_bundle(raw, encounter_ref):
+    """Parses a FHIR Bundle dict into a ContextBundle. Used for fixtures and for bundles sent in request bodies."""
     if not isinstance(raw, dict) or raw.get("resourceType") != "Bundle":
         raise PipelineError(ErrorClass.RETRIEVAL_UNAVAILABLE, "response is not a FHIR Bundle")
 

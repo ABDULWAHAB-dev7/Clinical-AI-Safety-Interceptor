@@ -10,6 +10,7 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 from core.errors import ErrorClass, PipelineError
+from store.records import NoteRegistration
 
 SCHEMA_PATH = pathlib.Path(__file__).resolve().parent.parent / "db" / "schema.sql"
 
@@ -184,3 +185,79 @@ class PostgresAuditStore:
                     )
         except psycopg.Error as exc:
             raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+
+
+    def register_note(self, *, patient_pseudo_id, encounter_pseudo_id, source_system, note_type, note_sha256,
+                      char_length, extract):
+        """Decompose path. A new note is stored as RECEIVED with one EXTRACT trace, in one transaction.
+
+        A duplicate (same patient and text) returns the existing note_id and writes nothing (DATABASE.md uniqueness).
+        """
+        try:
+            with self._connect() as conn:
+                row = conn.execute(
+                    """
+                    INSERT INTO intercepted_notes
+                        (patient_pseudo_id, encounter_pseudo_id, source_system, note_type, note_sha256,
+                         char_length, pipeline_status, claim_count)
+                    VALUES (%s, %s, %s, %s, %s, %s, 'RECEIVED', %s)
+                    ON CONFLICT (patient_pseudo_id, note_sha256) DO NOTHING
+                    RETURNING note_id
+                    """,
+                    (patient_pseudo_id, encounter_pseudo_id, source_system, note_type, note_sha256, char_length,
+                     extract.output_payload.get("assertion_count", 0)),
+                ).fetchone()
+                if row is None:
+                    existing = conn.execute(
+                        "SELECT note_id FROM intercepted_notes WHERE patient_pseudo_id = %s AND note_sha256 = %s",
+                        (patient_pseudo_id, note_sha256),
+                    ).fetchone()
+                    latest = conn.execute(
+                        "SELECT trace_id FROM audit_traces WHERE note_id = %s AND stage = 'EXTRACT' "
+                        "ORDER BY created_at DESC LIMIT 1",
+                        (existing[0],),
+                    ).fetchone()
+                    return NoteRegistration(str(existing[0]), False, str(latest[0]) if latest else None)
+                note_id = row[0]
+                trace = _add_stage(conn, note_id, patient_pseudo_id, extract)
+                return NoteRegistration(str(note_id), True, str(trace))
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+
+    def note_patient(self, note_id):
+        try:
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT patient_pseudo_id FROM intercepted_notes WHERE note_id = %s", (note_id,)
+                ).fetchone()
+                return row[0] if row else None
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+
+    def record_verify(self, note_id, stage):
+        try:
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT patient_pseudo_id FROM intercepted_notes WHERE note_id = %s", (note_id,)
+                ).fetchone()
+                if row is None:
+                    raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, "note disappeared")
+                return str(_add_stage(conn, note_id, row[0], stage))
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+
+
+def _add_stage(conn, note_id, patient_pseudo_id, stage):
+    return add_trace(
+        conn,
+        note_id=note_id,
+        patient_pseudo_id=patient_pseudo_id,
+        stage=stage.stage,
+        component_name=stage.component_name,
+        component_version=stage.component_version,
+        input_sha256=stage.input_sha256,
+        status=stage.status,
+        output_payload=stage.output_payload,
+        error_message=stage.error_message,
+        latency_ms=stage.latency_ms,
+    )

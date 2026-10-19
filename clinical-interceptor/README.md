@@ -139,3 +139,44 @@ Without `INTERCEPTOR_TEST_DSN`, the 8 database tests are skipped.
 - **Audit failure:** any database error becomes `AUDIT_WRITE_FAILURE`, which blocks delivery.
 
 Known gaps in this version: rule 1 (drug-allergy conflict) needs an RxNorm lookup for drug names, which the bundle does not carry yet, so the pipeline never fires it. NLI-based verdicts also need a model, which is still not approved, so in practice every free-text claim blocks.
+
+## API (API.md v1.0.0): first milestone
+
+Built, with 162 tests (the live PostgreSQL tests run when `INTERCEPTOR_TEST_DSN` is set):
+
+| Area | Endpoint or part | Status |
+|---|---|---|
+| Health | `GET /v1/health` (no auth), `GET /v1/health/ready` (503 if the DB is down) | Built |
+| Errors | Envelope from 11.1, codes table from 11.2 (subset), no text or IDs in messages | Built |
+| Headers | `X-Request-Id` (echoed if a UUID), `X-Interceptor-Version: 1.0.0`, `X-Interception-Time-MS` | Built |
+| Limits | 2 MiB body check (Content-Length), JSON content type (415) | Built |
+| Auth | Bearer JWT, ES256 or RS256, audience `clinical-interceptor`, lifetime at most 15 min, scopes (2.2) | Built. Default is deny-all. |
+| Decompose | `POST /v1/interceptor/decompose`: 201 for a new note, 200 for a duplicate | Built |
+| Verify | `POST /v1/interceptor/verify`: `VerificationResult` shape, optional VERIFY trace | Built |
+| Legacy | `POST /v1/verify` (full pipeline, now requires a token) | Kept |
+
+Not built: the proxy `/v1/chat/completions/intercept` (the upstream provider is undecided), `/v1/interceptor/audit` and the report and note reads, idempotency replay (8.3), mTLS, rate limiting, and streaming.
+
+### Configuration
+
+- `INTERCEPTOR_JWT_PUBLIC_KEY_FILE`: PEM public key for bearer tokens. If unset, every token is refused.
+- Other variables as before: `INTERCEPTOR_DATABASE_URL`, `INTERCEPTOR_PSEUDO_KEY`, `INTERCEPTOR_POLICY`, `INTERCEPTOR_FHIR_DIR`.
+
+### Blocking gaps before any deployment
+
+1. **mTLS is not enforced.** API.md 2.1 requires a bearer token and a client certificate on every clinical endpoint. Bearer is enforced here, and mTLS must be enforced at the internal load balancer. Do not expose the service to clients until this is in place.
+2. **Verification needs the NLI model.** Claims with no coded match return `503 INTERCEPT_VERIFIER_UNAVAILABLE`, so free-text claims cannot be verified yet.
+3. **Idempotency-Key is validated but replay is not stored.** A duplicate note returns the existing note ID because of the database uniqueness rule, but a reused key with a different body is not rejected with 409.
+
+### Conflicts and choices in API.md (please review)
+
+- **401 vs 403 for a missing token:** section 10 says 403, the error table says 401. This build uses 401 (`AUTH_TOKEN_INVALID`) for missing, expired, or badly signed tokens, and 403 (`AUTH_SCOPE_INSUFFICIENT`) for a missing scope.
+- **Retryable column:** garbled in the PDF extraction. Values follow what each code means.
+- **Entities:** decompose returns `entities: []`. Entity extraction is not built, and `include_entities` has no effect yet.
+- **Claim IDs:** decompose uses the spec's derivation (5.1.4). The events written by `/v1/verify` (the legacy pipeline) still use the earlier derivation, so the two do not match yet.
+- **Offsets in the examples:** API.md's own example offsets (48–85, 66–80) have the same errors as DATABASE.md 4.4. The API computes offsets from the text.
+- **Policy override:** `min_confidence_entailment` is accepted. The deterministic verifier's confidence is always 1.0, so the threshold has no effect yet.
+- **Rule 1 (drug-allergy conflict):** not fired, because there is no RxNorm lookup for drug names yet. The example's amoxicillin claim will not be flagged by this build.
+- **Limits:** the 2 MiB check reads the Content-Length header only. Chunked bodies are not limited yet.
+- **Paths changed:** `/healthz` and `/readyz` are replaced by `/v1/health` and `/v1/health/ready`.
+- **Non-spec warning code:** `INTERCEPT_CLAIM_SKIPPED` marks a sentence that produced no usable claim. The spec does not define it.
