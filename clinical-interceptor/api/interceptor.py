@@ -23,7 +23,7 @@ from core.errors import PipelineError
 from core.pipeline import PIPELINE_VERSION
 from core.verify import VerificationError, verify_claims
 from store.records import EventRecord, StageRecord
-from .auth import require_scope
+from .auth import authorize_patient, can_see_patient, require_scope
 from .context import load_patient_context
 from .errors import InterceptionError
 
@@ -67,6 +67,7 @@ def decompose_note(
     request: Request,
     idempotency_key: Optional[str] = Header(default=None, alias="Idempotency-Key"),
 ):
+    authorize_patient(request, body.patient_pseudo_id)
     if not idempotency_key or not UUID4_RE.match(idempotency_key):
         raise InterceptionError("VALIDATION_FAILED", "Idempotency-Key must be a UUIDv4.", "Idempotency-Key")
     text = body.note.text
@@ -178,6 +179,7 @@ class VerifyApiRequest(BaseModel):
 
 @router.post("/verify", dependencies=[require_scope("verify")])
 def verify(body: VerifyApiRequest, request: Request):
+    authorize_patient(request, body.patient_pseudo_id)
     state = request.app.state
     raw = body.fhir_bundle
     triples, warnings = load_patient_context(raw, body.patient_pseudo_id, state)
@@ -253,6 +255,7 @@ def audit(
     request: Request,
     idempotency_key: Optional[str] = Header(default=None, alias="Idempotency-Key"),
 ):
+    authorize_patient(request, body.patient_pseudo_id)
     state = request.app.state
     store = state.store
     if not idempotency_key or not UUID4_RE.match(idempotency_key):
@@ -353,7 +356,7 @@ def audit(
 def read_note(note_id: str, request: Request):
     store = request.app.state.store
     note = _store_call(store.get_note, note_id) if _is_uuid(note_id) else None
-    if note is None:
+    if note is None or not can_see_patient(request, note["patient_pseudo_id"]):
         raise InterceptionError("NOTE_NOT_FOUND", "The note is unknown or not visible to the caller.", "note_id")
     index = _store_call(store.get_claim_index, note["note_id"]) or []
     return {
@@ -376,7 +379,7 @@ def read_note(note_id: str, request: Request):
 @router.get("/audit/reports/{report_id}", dependencies=[require_scope("read")])
 def read_report(report_id: str, request: Request):
     report = _store_call(request.app.state.store.get_report, report_id) if _is_uuid(report_id) else None
-    if report is None:
+    if report is None or not can_see_patient(request, report["patient_pseudo_id"]):
         raise InterceptionError("REPORT_NOT_FOUND", "The report is unknown or not visible to the caller.", "report_id")
     return _report_view(report, replay=False)
 

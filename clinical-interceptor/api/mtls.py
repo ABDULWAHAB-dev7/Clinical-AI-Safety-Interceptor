@@ -32,6 +32,7 @@ from .errors import InterceptionError
 FINGERPRINT_HEADER = "x-client-cert-sha256"
 SECRET_HEADER = "x-proxy-secret"
 FINGERPRINT_RE = re.compile(r"^[0-9a-f]{64}$")
+PSEUDO_ID_RE = re.compile(r"^pid_[0-9a-f]{64}$")
 
 
 @dataclass(frozen=True)
@@ -39,18 +40,40 @@ class MtlsConfig:
     registry: dict = field(default_factory=dict)  # fingerprint (lowercase hex SHA-256) -> client_id
     trusted_proxies: frozenset = frozenset()  # client addresses allowed to forward the fingerprint header
     proxy_secret: Optional[bytes] = None
+    # client_id -> frozenset of patient pseudo-IDs the client may use. A client with no entry here may use any patient
+    # (programmatic default). Registry files must say so explicitly, see from_registry_file.
+    patient_scopes: dict = field(default_factory=dict)
+
+    def allows(self, client_id, pseudo_id):
+        scope = self.patient_scopes.get(client_id)
+        return scope is None or pseudo_id in scope
+
+    def is_unrestricted(self, client_id):
+        return self.patient_scopes.get(client_id) is None
 
     @classmethod
     def from_registry_file(cls, path, trusted_proxies=(), proxy_secret=None):
-        """Registry file: {"clients": [{"client_id": "...", "fingerprint_sha256": "..."}]}."""
+        """Registry file. Every client must say which patients it may use, so access is never granted by omission:
+
+            {"clients": [{"client_id": "...", "fingerprint_sha256": "...",
+                          "patient_scope": "all" | ["pid_<64 hex>", ...]}]}
+        """
         raw = json.loads(Path(path).read_text(encoding="utf-8"))
-        registry = {}
+        registry, scopes = {}, {}
         for entry in raw["clients"]:
             fingerprint = str(entry["fingerprint_sha256"]).lower()
-            if not FINGERPRINT_RE.match(fingerprint) or not str(entry["client_id"]).strip():
+            client_id = str(entry["client_id"]).strip()
+            if not FINGERPRINT_RE.match(fingerprint) or not client_id:
                 raise ValueError("invalid client registry entry")
-            registry[fingerprint] = str(entry["client_id"])
-        return cls(registry, frozenset(trusted_proxies), proxy_secret)
+            scope = entry.get("patient_scope")
+            if scope == "all":
+                pass
+            elif isinstance(scope, list) and all(isinstance(p, str) and PSEUDO_ID_RE.match(p) for p in scope):
+                scopes[client_id] = frozenset(scope)
+            else:
+                raise ValueError(f"client {client_id!r} needs patient_scope: 'all' or a list of pseudo-IDs")
+            registry[fingerprint] = client_id
+        return cls(registry, frozenset(trusted_proxies), proxy_secret, scopes)
 
 
 def fingerprint_of_pem(pem):

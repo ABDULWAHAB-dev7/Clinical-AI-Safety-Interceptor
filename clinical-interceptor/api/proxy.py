@@ -23,7 +23,7 @@ from intercept.pipeline import AuditFailure, InterceptContext, run_nonstream
 from intercept.stream import StreamSession
 from intercept.upstream import UpstreamError, UpstreamTimeout
 
-from .auth import require_scope
+from .auth import authorize_patient, require_scope
 from .context import load_patient_context
 from .errors import InterceptionError
 
@@ -77,6 +77,7 @@ async def intercept_chat(body: ChatRequest, request: Request):
 
     # Everything that can be rejected is rejected before the upstream is called.
     clinical = body.clinical_context
+    authorize_patient(request, clinical.patient_pseudo_id)
     triples, warnings = await run_in_threadpool(
         load_patient_context, clinical.fhir_bundle, clinical.patient_pseudo_id, state,
         "clinical_context.fhir_bundle", "clinical_context.patient_pseudo_id")

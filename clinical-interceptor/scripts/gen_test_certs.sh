@@ -5,7 +5,7 @@
 #   server.pem / server.key              server certificate for localhost and 127.0.0.1
 #   client-registered.pem / .key         a client certificate that IS in registry.json
 #   client-unregistered.pem / .key       a client certificate signed by the same CA but NOT in the registry
-#   registry.json                        {"clients": [{"client_id", "fingerprint_sha256"}]} for the registered client
+#   registry.json                        {"clients": [{"client_id", "fingerprint_sha256", "patient_scope"}]}
 #   jwt_private.pem / jwt_public.pem     an EC P-256 key pair for signing and verifying test bearer tokens
 set -euo pipefail
 export MSYS_NO_PATHCONV=1  # Git Bash on Windows: stop it rewriting the /CN=... subjects
@@ -27,7 +27,7 @@ for name in client-registered client-unregistered; do
 done
 
 FINGERPRINT=$(openssl x509 -in client-registered.pem -noout -fingerprint -sha256 | sed 's/.*=//; s/://g' | tr 'A-F' 'a-f')
-printf '{"clients": [{"client_id": "ehr-gateway-test", "fingerprint_sha256": "%s"}]}\n' "$FINGERPRINT" > registry.json
+printf '{"clients": [{"client_id": "ehr-gateway-test", "fingerprint_sha256": "%s", "patient_scope": "all"}]}\n' "$FINGERPRINT" > registry.json
 
 openssl ecparam -name prime256v1 -genkey -noout -out jwt_private.pem 2>/dev/null
 openssl ec -in jwt_private.pem -pubout -out jwt_public.pem 2>/dev/null

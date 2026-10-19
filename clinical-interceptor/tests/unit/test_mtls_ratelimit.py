@@ -102,7 +102,8 @@ class MtlsTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "registry.json"
             path.write_text(json.dumps({"clients": [{"client_id": "ehr-gateway",
-                                                      "fingerprint_sha256": CLIENT_FINGERPRINT.upper()}]}))
+                                                      "fingerprint_sha256": CLIENT_FINGERPRINT.upper(),
+                                                      "patient_scope": "all"}]}))
             config = MtlsConfig.from_registry_file(path, trusted_proxies=["10.0.0.1"], proxy_secret=b"s")
         self.assertEqual(config.registry, {CLIENT_FINGERPRINT: "ehr-gateway"})
         self.assertEqual(config.trusted_proxies, frozenset({"10.0.0.1"}))

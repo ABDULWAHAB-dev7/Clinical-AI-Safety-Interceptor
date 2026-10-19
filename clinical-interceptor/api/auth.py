@@ -60,6 +60,17 @@ def _bearer(request: Request) -> Optional[str]:
     return token.strip()
 
 
+def can_see_patient(request: Request, pseudo_id):
+    return request.app.state.mtls.allows(request.state.client_id, pseudo_id)
+
+
+def authorize_patient(request: Request, pseudo_id):
+    """A client may only use the patients in its registry scope (403). Reads use can_see_patient and answer 404."""
+    if not can_see_patient(request, pseudo_id):
+        raise InterceptionError("AUTH_SCOPE_INSUFFICIENT", "The client is not authorized for this patient.",
+                                "patient_pseudo_id")
+
+
 def require_scope(scope_key):
     scope = SCOPES[scope_key]
 

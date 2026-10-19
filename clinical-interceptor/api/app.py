@@ -32,7 +32,7 @@ from core.pipeline import MAX_DOCUMENT_CHARS, verify_document
 from core.knowledge import load_knowledge
 from core.policy import load_policy
 from .auth import DenyAllVerifier, JwtVerifier, require_scope
-from .errors import envelope, register_error_handlers
+from .errors import InterceptionError, envelope, register_error_handlers
 from .mtls import MtlsConfig
 from intercept.upstream import UpstreamClient
 from .ratelimit import RateLimiter
@@ -127,7 +127,10 @@ def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_m
     app.include_router(proxy_router)
 
     @app.post("/v1/verify", dependencies=[require_scope("verify")])
-    def verify(body: VerifyRequest):
+    def verify(body: VerifyRequest, request: Request):
+        # This endpoint finds the patient from the stored bundle, so a patient-restricted client cannot be checked here.
+        if not app.state.mtls.is_unrestricted(request.state.client_id):
+            raise InterceptionError("AUTH_SCOPE_INSUFFICIENT", "This endpoint needs a client with access to all patients.")
         if body.doc_type not in policy.doc_types_in_scope:
             raise HTTPException(status_code=400, detail="document type is not in facility scope")
         result = verify_document(
