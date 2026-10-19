@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/* Light theme only: the severity colors are chosen and checked for contrast (at least 4.5:1) on these backgrounds. */
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}

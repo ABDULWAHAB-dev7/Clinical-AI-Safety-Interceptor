@@ -1,0 +1,112 @@
+{
+  "case_id": "case-0001",
+  "meta": {
+    "generated_by": "scripts/export_fixture.py",
+    "note_synthetic": true,
+    "nli": "neutral-stand-in",
+    "verifier_version": "verifier-0.2.0+knowledge-seed"
+  },
+  "note_text": "Chief complaint: Follow-up for type 2 diabetes. Patient denies known drug allergies. HbA1c 8.2% on 2026-09-02. Started amoxicillin 500 mg TID for sinusitis. Blood pressure stable.",
+  "report": {
+    "report_id": "9531db3f-a72e-4bde-ab09-d109b4fccf65",
+    "note_id": "508ba2e0-e5ec-44a5-b9c2-1470c1df2f8d",
+    "patient_pseudo_id": "801cb910",
+    "overall_risk_severity": "CRITICAL",
+    "pipeline_status": "BLOCKED",
+    "counts": {
+      "CRITICAL": 2,
+      "WARNING": 1,
+      "SAFE": 2
+    },
+    "hallucination_events": [
+      {
+        "event_id": "7c2d61fc-6245-4146-9c33-e6587f19faae",
+        "claim_id": "clm_344e3569c81f",
+        "category": "DRUG_ALLERGY_CONFLICT",
+        "risk_severity": "CRITICAL",
+        "nli_class": "CONTRADICTION",
+        "risk_rule": "contradiction_high_risk",
+        "confidence": 1.0,
+        "matched_fhir_ref": "AllergyIntolerance/allergy-penicillin-001",
+        "detected_at": "2026-10-19T18:46:09Z"
+      },
+      {
+        "event_id": "39c88f01-af6b-4b9e-9fb1-ae5ed7c7597b",
+        "claim_id": "clm_d17e55d6bdf3",
+        "category": "UNSUPPORTED_CLAIM",
+        "risk_severity": "WARNING",
+        "nli_class": "NEUTRAL",
+        "risk_rule": "unsupported_clinical",
+        "confidence": 0.8,
+        "matched_fhir_ref": null,
+        "detected_at": "2026-10-19T18:46:09Z"
+      },
+      {
+        "event_id": "0b567047-5918-4c81-8a84-f15571e99f32",
+        "claim_id": "clm_dcee3b9abc77",
+        "category": "DRUG_ALLERGY_CONFLICT",
+        "risk_severity": "CRITICAL",
+        "nli_class": "NEUTRAL",
+        "risk_rule": "drug_allergy_conflict",
+        "confidence": 1.0,
+        "matched_fhir_ref": "AllergyIntolerance/allergy-penicillin-001",
+        "detected_at": "2026-10-19T18:46:09Z"
+      }
+    ],
+    "attribution_spans": [
+      {
+        "span_id": "220eb9fd-4817-439c-b1f4-4ae7f85de5d0",
+        "note_id": "508ba2e0-e5ec-44a5-b9c2-1470c1df2f8d",
+        "doc_char_start": 48,
+        "doc_char_end": 83,
+        "classification": "SOURCE_CONTRADICTED",
+        "claim_id": "clm_344e3569c81f",
+        "result_id": "16b38e53-d77c-4b0e-a7de-4b043cb8583b",
+        "explanation": "The statement conflicts with AllergyIntolerance/allergy-penicillin-001."
+      },
+      {
+        "span_id": "5ed4dce6-ffc9-4f08-976d-083f9aaa8403",
+        "note_id": "508ba2e0-e5ec-44a5-b9c2-1470c1df2f8d",
+        "doc_char_start": 157,
+        "doc_char_end": 178,
+        "classification": "NO_SOURCE_EVIDENCE",
+        "claim_id": "clm_d17e55d6bdf3",
+        "result_id": "744f9478-23c4-40cf-9144-d9513c23ba7f",
+        "explanation": "No supporting evidence for this statement was found in the patient record."
+      },
+      {
+        "span_id": "32a9e1ff-6acd-4cf0-b16e-317140323ded",
+        "note_id": "508ba2e0-e5ec-44a5-b9c2-1470c1df2f8d",
+        "doc_char_start": 111,
+        "doc_char_end": 155,
+        "classification": "NO_SOURCE_EVIDENCE",
+        "claim_id": "clm_dcee3b9abc77",
+        "result_id": "de0d91e0-e333-4c55-9078-eb96eb8b934f",
+        "explanation": "The statement describes a drug that matches a documented allergy (AllergyIntolerance/allergy-penicillin-001)."
+      },
+      {
+        "span_id": "50b7cbed-48e1-48b2-a1b6-5aed302ee1ae",
+        "note_id": "508ba2e0-e5ec-44a5-b9c2-1470c1df2f8d",
+        "doc_char_start": 0,
+        "doc_char_end": 46,
+        "classification": "SOURCE_SUPPORTED",
+        "claim_id": "clm_f6207ae69527",
+        "result_id": "2e806690-774d-4824-a431-66e64283b5d3",
+        "explanation": "The statement is supported by Condition/cond-t2dm-001."
+      },
+      {
+        "span_id": "6183fc05-37eb-43db-9160-145f8a97781a",
+        "note_id": "508ba2e0-e5ec-44a5-b9c2-1470c1df2f8d",
+        "doc_char_start": 85,
+        "doc_char_end": 109,
+        "classification": "SOURCE_SUPPORTED",
+        "claim_id": "clm_fdcaf42a47ed",
+        "result_id": "701f6392-e7b7-4747-821c-5c82e62d6a08",
+        "explanation": "The statement is supported by Observation/obs-hba1c-001."
+      }
+    ],
+    "trace_id": "9199e165-dc76-4400-9c09-1f5bd5ca118a",
+    "created_at": "2026-10-19T18:46:09Z",
+    "idempotent_replay": false
+  }
+}

@@ -56,6 +56,7 @@ src/interceptor/
   paths.py   PROJECT_ROOT (override with INTERCEPTOR_HOME) for data directories
 knowledge/ synthetic lexicon and thresholds (require clinical review)
 db/        schema.sql;  migrations/  Alembic
+web/       Next.js dashboard (phase 6), see web/README.md
 config/    versioned policy file
 fixtures/  synthetic FHIR bundles
 examples/  sample requests (clean and contradicted)
