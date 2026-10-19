@@ -1,0 +1,12 @@
+# Versioned policy. Hard-stop rules are in code (core/policy.py), not here.
+# Thresholds are placeholders until the NLI model is approved and calibrated (architecture 10.1, 10.2).
+policy_version: "0.1.0"
+doc_types_in_scope:
+  - soap_note
+  - discharge_summary
+  - radiology_report
+nli:
+  entailment_threshold: 0.85
+  contradiction_threshold: 0.85
+tolerances:
+  observation_lab_abs: 0.0  # placeholder; lab tolerance table is PRD open question 2

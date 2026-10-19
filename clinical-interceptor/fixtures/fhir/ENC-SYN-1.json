@@ -1,0 +1,9 @@
+{
+  "resourceType": "Bundle",
+  "type": "searchset",
+  "entry": [
+    {"resource": {"resourceType": "AllergyIntolerance", "id": "al-1", "code": {"text": "penicillin"}}},
+    {"resource": {"resourceType": "MedicationRequest", "id": "mr-1", "medicationCodeableConcept": {"text": "metformin"}}},
+    {"resource": {"resourceType": "Observation", "id": "obs-1", "code": {"text": "Hgb"}, "valueQuantity": {"value": 12.1, "unit": "g/dL"}}}
+  ]
+}
