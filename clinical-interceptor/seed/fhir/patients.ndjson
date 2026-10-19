@@ -1,0 +1,1 @@
+{"resourceType": "Patient", "id": "pat-0001", "identifier": [{"system": "urn:synthetic:mrn", "value": "SYNTH-MRN-0001", "use": "usual"}], "active": true, "name": [{"family": "Synthetic", "given": ["Patient"], "use": "official"}], "gender": "female", "birthDate": "1968-03-14"}

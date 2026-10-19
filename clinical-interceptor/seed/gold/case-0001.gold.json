@@ -1,0 +1,132 @@
+{
+  "case_id": "case-0001",
+  "note_file": "notes/case-0001.txt",
+  "note_sha256": "705875a9bca3e1abd144e8927d0ec173c7ddc42b6230d4e6534f9d18464627fb",
+  "fhir_source_dir": "fhir/",
+  "patient_ref": "Patient/pat-0001",
+  "offsets_generated_from": "computed from the note text; the DATABASE.md 4.4 hand-computed offsets were wrong (see tools/seed_check.py S4)",
+  "propositions": [
+    {
+      "claim_id": "clm_000000000001",
+      "source_sentence_start": 48,
+      "source_sentence_end": 84,
+      "source_sentence": "Patient denies known drug allergies.",
+      "char_start": 48,
+      "char_end": 83,
+      "claim_text": "Patient denies known drug allergies",
+      "entities": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "416098002",
+          "display": "Drug allergy",
+          "surface_text": "drug allergies",
+          "char_start": 69,
+          "char_end": 83
+        }
+      ],
+      "expected_nli": "CONTRADICTION",
+      "confidence": 0.93,
+      "is_clinical": true,
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_category": "DRUG_ALLERGY_CONFLICT"
+    },
+    {
+      "claim_id": "clm_000000000002",
+      "source_sentence_start": 17,
+      "source_sentence_end": 47,
+      "source_sentence": "Follow-up for type 2 diabetes.",
+      "char_start": 31,
+      "char_end": 46,
+      "claim_text": "Patient has type 2 diabetes",
+      "entities": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "44054006",
+          "display": "Diabetes mellitus type 2",
+          "surface_text": "type 2 diabetes",
+          "char_start": 31,
+          "char_end": 46
+        }
+      ],
+      "expected_nli": "ENTAILMENT",
+      "confidence": 0.92,
+      "is_clinical": true,
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_category": null
+    },
+    {
+      "claim_id": "clm_000000000003",
+      "source_sentence_start": 85,
+      "source_sentence_end": 110,
+      "source_sentence": "HbA1c 8.2% on 2026-09-02.",
+      "char_start": 85,
+      "char_end": 109,
+      "claim_text": "HbA1c was 8.2% on 2026-09-02",
+      "entities": [
+        {
+          "system": "http://loinc.org",
+          "code": "4548-4",
+          "display": "Hemoglobin A1c/Hemoglobin.total in Blood",
+          "surface_text": "HbA1c",
+          "char_start": 85,
+          "char_end": 90
+        }
+      ],
+      "expected_nli": "ENTAILMENT",
+      "confidence": 0.9,
+      "is_clinical": true,
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_category": null
+    },
+    {
+      "claim_id": "clm_000000000004",
+      "source_sentence_start": 111,
+      "source_sentence_end": 156,
+      "source_sentence": "Started amoxicillin 500 mg TID for sinusitis.",
+      "char_start": 111,
+      "char_end": 141,
+      "claim_text": "Patient was started on amoxicillin 500 mg three times daily",
+      "entities": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "723",
+          "display": "Amoxicillin",
+          "surface_text": "amoxicillin",
+          "char_start": 119,
+          "char_end": 130
+        }
+      ],
+      "expected_nli": "NEUTRAL",
+      "confidence": 0.61,
+      "is_clinical": true,
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "drug_allergy_conflict",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "note": "NLI is NEUTRAL because no medication-order fact exists. Severity is set by the rule, not the model."
+    },
+    {
+      "claim_id": "clm_000000000005",
+      "source_sentence_start": 157,
+      "source_sentence_end": 179,
+      "source_sentence": "Blood pressure stable.",
+      "char_start": 157,
+      "char_end": 178,
+      "claim_text": "Blood pressure is stable",
+      "entities": [],
+      "expected_nli": "NEUTRAL",
+      "confidence": 0.58,
+      "is_clinical": true,
+      "expected_ref": null,
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_category": "UNSUPPORTED_CLAIM"
+    }
+  ]
+}

@@ -80,3 +80,44 @@ These block the parts not built. The code exposes an interface for each so it ca
 - **Audit schema** is a placeholder. The architecture's PostgreSQL schema is not built.
 - **Latency budget** (800 ms p95) is not measured. No benchmark exists yet.
 - **Approver roles and override flow** (`/v1/override`) are not built.
+
+## Database layer (DATABASE.md)
+
+| Part | Location | Status |
+|---|---|---|
+| FHIR R4 ingestion models (Patient, Observation, AllergyIntolerance, Condition, Encounter) | `fhir/models.py` | Built |
+| Ingestion rules R1 to R4 | `fhir/ingest.py` | Built. R2 and R4 text was partly lost in the PDF; mapping noted in the module. |
+| Verification contracts (MedicalEntity, AtomicProposition, VerificationResult, AttributionSpan) | `core/contracts.py` | Built, with validators |
+| Severity policy (priorities 1 to 6) | `core/severity.py` | Built. The NLI class is never changed by a rule. |
+| Keyed pseudo-IDs (`pid_`, `eid_`, HMAC-SHA256) | `core/pseudo.py` | Built. The seed uses an obviously fake dev key. |
+| PostgreSQL schema: ENUMs, tables, append-only triggers, indexes, `v_hallucination_current` | `db/schema.sql` | Built and applied on PostgreSQL 18 |
+| Repository (inserts, latest review state) | `store/postgres.py` | Built |
+| Synthetic seed case-0001 (FHIR ndjson, note, gold labels) | `seed/` | Built |
+| Acceptance checks S1 to S5 | `tools/seed_check.py` | Built, all pass |
+
+### Run the database tests
+
+Use a disposable database. The DB tests drop and recreate its `public` schema.
+
+```bash
+createdb -h 127.0.0.1 -p 55432 -U postgres interceptor_test
+INTERCEPTOR_TEST_DSN="host=127.0.0.1 port=55432 dbname=interceptor_test user=postgres" python -m unittest discover -s tests -t .
+python tools/seed_check.py
+```
+
+Without `INTERCEPTOR_TEST_DSN`, the 8 database tests are skipped.
+
+### Changes from DATABASE.md (please review)
+
+- **Gold offsets were regenerated.** The hand-computed offsets in section 4.4 did not match the note text. For example, "drug allergies" is at 69 to 83, not 66 to 80, and the S2 sentence ends at 84, not 85. The offsets are now computed from the text, and S4 checks them. A test shows the original values fail S4.
+- **Added gold fields** `confidence` and `is_clinical`, needed to evaluate the severity policy. `source_sentence` is stored so S4 can check it.
+- **The sentence `Chief complaint:` is treated as a section header**, so S1 starts at offset 17, as in the doc.
+- **Terminology is a placeholder.** The RxNorm-to-allergy-class mapping (amoxicillin to penicillin) covers only case-0001 and must be replaced by a governed lookup.
+- **The `v_hallucination_current` view** uses a LATERAL join, so events with no review show as `OPEN`. The doc's `DISTINCT ON` version would hide them.
+- **Row-level security, analyst roles, and grants** from section 3.6 are not in the schema. The triggers do enforce append-only.
+
+### Not built
+
+- Writing a full request through the pipeline into PostgreSQL. `core/pipeline.py` still uses the JSONL audit log.
+- Encrypted object store for note text (`note_storage_uri` is nullable).
+- Retention jobs (6 years, assumed), access roles, and row-level security.
