@@ -11,6 +11,8 @@ from core.pseudo import patient_pseudo_id
 from store.records import MemoryAuditStore
 from tests.support_bundle import BUNDLE, MRN
 from tests.support import (
+    security,
+    mtls_headers,
     ALL_SCOPES,
     FHIR_DIR,
     POLICY_PATH,
@@ -40,7 +42,7 @@ class Base(unittest.TestCase):
         self.store = store or MemoryAuditStore()
         verifier = JwtVerifier(PUBLIC_PEM) if verifier else None
         app = create_app(policy_path=POLICY_PATH, fhir_dir=FHIR_DIR, store=self.store, pseudo_key=KEY,
-                         verifier=verifier)
+                         verifier=verifier, **security())
         self.client = TestClient(app)
 
 
@@ -57,31 +59,31 @@ class AuthTests(Base):
         return error
 
     def test_missing_token_is_401(self):
-        self.assert_error(self.client.post("/v1/interceptor/decompose", json=decompose_body(), headers=IDEM),
+        self.assert_error(self.client.post("/v1/interceptor/decompose", json=decompose_body(), headers=IDEM | mtls_headers()),
                           401, "AUTH_TOKEN_INVALID")
 
     def test_auth_runs_before_body_validation(self):
-        self.assert_error(self.client.post("/v1/interceptor/decompose", json={}, headers=IDEM),
+        self.assert_error(self.client.post("/v1/interceptor/decompose", json={}, headers=IDEM | mtls_headers()),
                           401, "AUTH_TOKEN_INVALID")
 
     def test_no_verifier_configured_refuses_everything(self):
         self.make(verifier=False)
-        headers = {"Authorization": f"Bearer {make_token()}"}
+        headers = {"Authorization": f"Bearer {make_token()}"} | mtls_headers()
         self.assert_error(self.client.post("/v1/interceptor/decompose", json=decompose_body(), headers=IDEM | headers),
                           401, "AUTH_TOKEN_INVALID")
 
     def test_wrong_audience_is_401(self):
-        headers = {"Authorization": f"Bearer {make_token(aud='someone-else')}"}
+        headers = {"Authorization": f"Bearer {make_token(aud='someone-else')}"} | mtls_headers()
         self.assert_error(self.client.post("/v1/interceptor/decompose", json=decompose_body(), headers=IDEM | headers),
                           401, "AUTH_TOKEN_INVALID")
 
     def test_expired_token_is_401(self):
-        headers = {"Authorization": f"Bearer {make_token(issued_at=1_000_000)}"}
+        headers = {"Authorization": f"Bearer {make_token(issued_at=1_000_000)}"} | mtls_headers()
         self.assert_error(self.client.post("/v1/interceptor/decompose", json=decompose_body(), headers=IDEM | headers),
                           401, "AUTH_TOKEN_INVALID")
 
     def test_lifetime_over_15_minutes_is_401(self):
-        headers = {"Authorization": f"Bearer {make_token(lifetime=3600)}"}
+        headers = {"Authorization": f"Bearer {make_token(lifetime=3600)}"} | mtls_headers()
         self.assert_error(self.client.post("/v1/interceptor/decompose", json=decompose_body(), headers=IDEM | headers),
                           401, "AUTH_TOKEN_INVALID")
 
@@ -90,7 +92,7 @@ class AuthTests(Base):
         from cryptography.hazmat.primitives import serialization
         other = ec.generate_private_key(ec.SECP256R1()).private_bytes(
             serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())
-        headers = {"Authorization": f"Bearer {make_token(key=other)}"}
+        headers = {"Authorization": f"Bearer {make_token(key=other)}"} | mtls_headers()
         self.assert_error(self.client.post("/v1/interceptor/decompose", json=decompose_body(), headers=IDEM | headers),
                           401, "AUTH_TOKEN_INVALID")
 
@@ -200,6 +202,22 @@ class DecomposeTests(Base):
         self.assertEqual(second.status_code, 200)
         self.assertEqual(second.json()["note_id"], first["note_id"])
         self.assertEqual(len(self.store.traces), 1)  # the duplicate writes no new trace
+
+    def test_same_key_and_body_is_a_replay_with_200(self):
+        key = {"Idempotency-Key": str(uuid.uuid4())}
+        first = self.client.post("/v1/interceptor/decompose", json=decompose_body(), headers=key | auth_headers())
+        second = self.client.post("/v1/interceptor/decompose", json=decompose_body(), headers=key | auth_headers())
+        self.assertEqual((first.status_code, second.status_code), (201, 200))
+        self.assertEqual(first.json()["note_id"], second.json()["note_id"])
+        self.assertEqual(first.json()["claims"], second.json()["claims"])
+
+    def test_same_key_with_a_different_note_is_409(self):
+        key = {"Idempotency-Key": str(uuid.uuid4())}
+        self.client.post("/v1/interceptor/decompose", json=decompose_body(), headers=key | auth_headers())
+        other = self.client.post("/v1/interceptor/decompose", json=decompose_body("A different note."),
+                                 headers=key | auth_headers())
+        self.assertEqual((other.status_code, other.json()["error"]["code"]), (409, "IDEMPOTENCY_KEY_REUSED"))
+        self.assertEqual(len(self.store.notes), 1)  # the second note was not stored
 
     def test_missing_idempotency_key_is_400(self):
         r = self.client.post("/v1/interceptor/decompose", json=decompose_body(), headers=auth_headers())

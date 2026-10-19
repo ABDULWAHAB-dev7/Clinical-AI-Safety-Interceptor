@@ -27,7 +27,7 @@ PRIVATE_PEM = _KEY.private_bytes(
 PUBLIC_PEM = _KEY.public_key().public_bytes(
     serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
 ).decode("ascii")
-ALL_SCOPES = "interceptor:decompose interceptor:verify"
+ALL_SCOPES = "interceptor:intercept interceptor:decompose interceptor:verify interceptor:audit:write interceptor:read"
 
 
 def make_token(scope=ALL_SCOPES, *, lifetime=600, aud="clinical-interceptor", key=None, issued_at=None):
@@ -36,5 +36,30 @@ def make_token(scope=ALL_SCOPES, *, lifetime=600, aud="clinical-interceptor", ke
     return jwt.encode(claims, key or PRIVATE_PEM, algorithm="ES256")
 
 
+# ---- client certificate identity: a registered fingerprint, forwarded by a trusted "proxy" (the test client) ----
+import hashlib  # noqa: E402
+
+from api.mtls import MtlsConfig  # noqa: E402
+from api.ratelimit import RateLimiter  # noqa: E402
+
+CLIENT_ID = "client-test"
+CLIENT_FINGERPRINT = hashlib.sha256(b"test-client-certificate").hexdigest()
+UNREGISTERED_FINGERPRINT = hashlib.sha256(b"unregistered-certificate").hexdigest()
+PROXY_SECRET = "proxy-secret-for-tests-0123456789"
+
+
+def security(rate_limit=100000, trusted=("testclient",)):
+    """create_app keyword arguments: one registered client, a trusted proxy address, and a generous rate limit."""
+    return {
+        "mtls": MtlsConfig({CLIENT_FINGERPRINT: CLIENT_ID}, frozenset(trusted), PROXY_SECRET.encode("ascii")),
+        "limiter": RateLimiter(rate_limit),
+    }
+
+
+def mtls_headers(fingerprint=CLIENT_FINGERPRINT, secret=PROXY_SECRET):
+    return {"X-Client-Cert-SHA256": fingerprint, "X-Proxy-Secret": secret}
+
+
 def auth_headers(scope=ALL_SCOPES):
-    return {"Authorization": f"Bearer {make_token(scope)}"}
+    """Bearer token plus the certificate headers a trusted proxy would add."""
+    return {"Authorization": f"Bearer {make_token(scope)}"} | mtls_headers()

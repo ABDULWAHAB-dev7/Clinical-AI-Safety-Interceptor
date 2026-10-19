@@ -1,8 +1,7 @@
 """Bearer token verification and scope checks (API.md 2.1 and 2.2).
 
-Implemented here: RS256/ES256 JWT signature, audience, expiry, lifetime at most 15 minutes, and scopes.
-NOT implemented in this step: the mTLS client-certificate check. API.md requires both bearer and mTLS on every clinical
-endpoint. Until mTLS is wired at the internal load balancer, this service must not be exposed to clients.
+Implemented here: the client certificate (api/mtls.py), RS256/ES256 JWT signature, audience, expiry, lifetime at most
+15 minutes, scopes, and the per-client rate limit. Both factors are required on every clinical endpoint (API.md 2.1).
 
 The default verifier denies every token (fail-closed). A verifier is only installed when a public key is configured.
 """
@@ -13,6 +12,7 @@ import jwt
 from fastapi import Depends, Request
 
 from .errors import InterceptionError
+from .mtls import identify_client
 
 AUDIENCE = "clinical-interceptor"
 MAX_LIFETIME_SECONDS = 15 * 60
@@ -64,13 +64,21 @@ def require_scope(scope_key):
     scope = SCOPES[scope_key]
 
     def dependency(request: Request):
+        state = request.app.state
+        # Both factors are required (API.md 2.1). The certificate is checked first, then the token, then the scope.
+        request.state.client_id = identify_client(request, state.mtls)
         token = _bearer(request)
         if token is None:
             raise InterceptionError("AUTH_TOKEN_INVALID", "Bearer token is missing.")
-        claims = request.app.state.verifier.verify(token)
+        claims = state.verifier.verify(token)
         granted = set(str(claims.get("scope", "")).split())
         if scope not in granted:
             raise InterceptionError("AUTH_SCOPE_INSUFFICIENT", f"Token lacks the scope {scope}.")
+        status = state.limiter.hit(request.state.client_id)
+        request.state.ratelimit = status
+        if not status.allowed:
+            raise InterceptionError("RATE_LIMITED", "The request rate limit was exceeded.",
+                                    retry_after=status.reset_seconds)
         return claims
 
     return Depends(dependency)

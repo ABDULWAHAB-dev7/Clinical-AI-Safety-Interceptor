@@ -5,3 +5,5 @@ uvicorn>=0.29
 httpx>=0.27  # tests only (FastAPI TestClient); lock file pinning is an open item (architecture 8.6)
 psycopg[binary]>=3.2  # PostgreSQL driver for store/postgres.py and tests/db
 pyjwt[crypto]>=2.8  # bearer token verification (API.md 2.1)
+alembic>=1.13  # migrations (PLAN 5.1)
+sqlalchemy>=2.0  # required by alembic

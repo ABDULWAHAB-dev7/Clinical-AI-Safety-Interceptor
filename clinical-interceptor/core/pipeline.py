@@ -76,7 +76,7 @@ def verify_document(text, doc_type, encounter_ref, *, policy, fhir_dir, store, p
     def run(name, fn, payload):
         """Runs one stage. Records its outcome; on failure, marks the stage and records the error class."""
         if state["failed"] is not None:
-            stages.append(_stage_row(name, payload(), {}, "SKIPPED", f"skipped after {state['failed']}"))
+            stages.append(stage_row(name, payload(), {}, "SKIPPED", f"skipped after {state['failed']}"))
             return
         started = time.monotonic()
         try:
@@ -84,13 +84,13 @@ def verify_document(text, doc_type, encounter_ref, *, policy, fhir_dir, store, p
         except PipelineError as exc:
             errors.append(exc.error_class.value)
             state["failed"] = name
-            stages.append(_stage_row(name, payload(), {}, "ERROR", exc.error_class.value, started))
+            stages.append(stage_row(name, payload(), {}, "ERROR", exc.error_class.value, started))
         except Exception:  # any other failure: whole-document hard block (architecture 7.1)
             errors.append(ErrorClass.UNHANDLED_EXCEPTION.value)
             state["failed"] = name
-            stages.append(_stage_row(name, payload(), {}, "ERROR", ErrorClass.UNHANDLED_EXCEPTION.value, started))
+            stages.append(stage_row(name, payload(), {}, "ERROR", ErrorClass.UNHANDLED_EXCEPTION.value, started))
         else:
-            stages.append(_stage_row(name, payload(), output, "OK", None, started))
+            stages.append(stage_row(name, payload(), output, "OK", None, started))
 
     def ingest():
         if not isinstance(text, str):
@@ -138,7 +138,7 @@ def verify_document(text, doc_type, encounter_ref, *, policy, fhir_dir, store, p
     assertions, records = state["assertions"], state["records"]
     decision = decide(policy, records, errors, len(assertions))
     stages.append(
-        _stage_row(
+        stage_row(
             "INTERCEPT",
             {"errors": errors, "verdicts": _verdicts(records)},
             {"outcome": decision.outcome.value, "rules_fired": decision.rules_fired, "errors": errors},
@@ -259,7 +259,7 @@ def _events(text_sha, assertions, records):
     return events
 
 
-def _stage_row(name, input_payload, output, status, error: Optional[str] = None, started=None):
+def stage_row(name, input_payload, output, status, error: Optional[str] = None, started=None):
     latency = None if started is None else int((time.monotonic() - started) * 1000)
     return StageRecord(
         stage=name,

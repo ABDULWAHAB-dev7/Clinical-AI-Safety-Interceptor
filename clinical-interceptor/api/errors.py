@@ -27,9 +27,11 @@ class CodeSpec:
 CODES = {
     "VALIDATION_FAILED": CodeSpec(400, "NONE", False),
     "AUTH_TOKEN_INVALID": CodeSpec(401, "NONE", False),
+    "AUTH_MTLS_REQUIRED": CodeSpec(403, "NONE", False),
     "AUTH_SCOPE_INSUFFICIENT": CodeSpec(403, "NONE", False),
     "NOTE_NOT_FOUND": CodeSpec(404, "NONE", False),
     "REPORT_NOT_FOUND": CodeSpec(404, "NONE", False),
+    "IDEMPOTENCY_KEY_REUSED": CodeSpec(409, "NONE", False),
     "UNSUPPORTED_MEDIA_TYPE": CodeSpec(415, "NONE", False),
     "INTERCEPT_NOTE_TOO_LARGE": CodeSpec(413, "NONE", False),
     "INTERCEPT_BUNDLE_TOO_LARGE": CodeSpec(413, "NONE", False),
@@ -41,24 +43,28 @@ CODES = {
     "AUDIT_NOTE_PATIENT_MISMATCH": CodeSpec(422, "BLOCKED", False),
     "RATE_LIMITED": CodeSpec(429, "NONE", True),
     "INTERCEPT_INTERNAL_ERROR": CodeSpec(500, "BLOCKED", False),
+    "INTERCEPT_UPSTREAM_ERROR": CodeSpec(502, "BLOCKED", False),
+    "INTERCEPT_UPSTREAM_TIMEOUT": CodeSpec(504, "BLOCKED", True),
     "INTERCEPT_VERIFIER_UNAVAILABLE": CodeSpec(503, "BLOCKED", True),
     "AUDIT_WRITE_FAILED": CodeSpec(503, "BLOCKED", True),
 }
 
 
 class InterceptionError(Exception):
-    def __init__(self, code, message, param=None):
+    def __init__(self, code, message, param=None, retry_after=None, trace_id=None):
         super().__init__(message)
         if code not in CODES:
             raise ValueError(f"unknown error code {code}")
         self.code = code
         self.message = message
         self.param = param
+        self.retry_after = retry_after
+        self.trace_id = trace_id
 
 
-def envelope(request, code, message, param=None, trace_id=None):
+def error_body(request_id, code, message, param=None, trace_id=None):
     spec = CODES[code]
-    body = {
+    return {
         "error": {
             "type": "clinical_interception_error",
             "code": code,
@@ -67,12 +73,17 @@ def envelope(request, code, message, param=None, trace_id=None):
             "clinical_impact": spec.clinical_impact,
             "fail_mode": "CLOSED",
             "retryable": spec.retryable,
-            "request_id": _request_id(request),
+            "request_id": request_id,
             "trace_id": trace_id,
             "docs_url": f"{DOCS_BASE}#{code}",
         }
     }
-    headers = {"Retry-After": "30"} if spec.retryable else {}
+
+
+def envelope(request, code, message, param=None, trace_id=None, retry_after=None):
+    spec = CODES[code]
+    body = error_body(_request_id(request), code, message, param, trace_id)
+    headers = {"Retry-After": str(retry_after or 30)} if (spec.retryable or retry_after) else {}
     return JSONResponse(body, status_code=spec.http_status, headers=headers)
 
 
@@ -83,7 +94,7 @@ def _request_id(request):
 def register_error_handlers(app):
     @app.exception_handler(InterceptionError)
     async def _interception(request: Request, exc: InterceptionError):
-        return envelope(request, exc.code, exc.message, exc.param)
+        return envelope(request, exc.code, exc.message, exc.param, exc.trace_id, exc.retry_after)
 
     @app.exception_handler(RequestValidationError)
     async def _validation(request: Request, exc: RequestValidationError):

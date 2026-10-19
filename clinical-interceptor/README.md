@@ -8,7 +8,7 @@ Verifies a generated clinical document against the patient's FHIR record before 
 
 | Stage (architecture 3) | Module | Status |
 |---|---|---|
-| 1. Ingestion (`/v1/verify`, size cap, scope check, request validation) | `api/app.py` | Built. Proxy endpoints are not built. |
+| 1. Ingestion (`/v1/verify`, size cap, scope check, request validation) | `api/app.py` | Built. See the API section for every endpoint, including the proxy. |
 | 2. Decomposition | `core/decompose.py` | Rule-based stand-in: sentence segmentation, section headers, negation, typing. The LLM decomposer and Med-spaCy are not built. |
 | 3. Ground-truth retrieval | `fhir/bundle.py` | Reads a local FHIR Bundle fixture. The SMART-authenticated client is not built. |
 | 4. Verification matrix | `nli/deterministic.py`, `nli/model.py` | Deterministic verifiers for allergy, medication and lab. NLI is an interface only, with no model loaded. |
@@ -36,21 +36,12 @@ Python 3.11+ (tested on 3.12).
 
 ```bash
 pip install -r requirements.txt
-python -m unittest discover -s tests -t .          # 104 tests; database tests skip without a DSN
-uvicorn api.app:build_default_app --factory --host 127.0.0.1 --port 8000
+python -m unittest discover -s tests -t .          # database tests skip without INTERCEPTOR_TEST_DSN
 ```
 
-Environment for the default app:
-
-- `INTERCEPTOR_DATABASE_URL` (required): PostgreSQL DSN. The schema in `db/schema.sql` must already be applied.
-- `INTERCEPTOR_PSEUDO_KEY` (required, at least 16 bytes): secret for patient and encounter pseudo-IDs. Never commit it.
-- `INTERCEPTOR_POLICY`, `INTERCEPTOR_FHIR_DIR` (optional): default to `config/policy/default.yaml` and `fixtures/fhir/`.
-
-The service refuses to start without the first two. `/readyz` returns 503 if the database is unreachable.
-
-```bash
-curl -s -X POST http://127.0.0.1:8000/v1/verify -H "Content-Type: application/json" -d @examples/verify_clean.json
-```
+To run the service, see "Run it for real (local)" in the API section. It needs a migrated PostgreSQL database, the
+pseudonym key, a JWT public key and a client certificate registry; the service refuses to start without the database URL
+and the key, and refuses every clinical request until the registry and the token key are configured.
 
 ## Layout
 
@@ -75,7 +66,7 @@ These block the parts not built. The code exposes an interface for each so it ca
 
 1. **NLI model selection and license.** Without a model, NLI-routed assertions become `VERIFICATION_ERROR` and block. Free-text claims (plans, findings, conditions) therefore always block today.
 2. **Review-store retention design.** Span text is returned only for delivered documents. No review store exists yet, so the dashboard cannot display the attributed document.
-3. **Upstream BAA coverage.** Proxy mode is not built.
+3. **Upstream BAA coverage.** The proxy is built, but the prompt is sent to the upstream model, so a BAA (or a locally hosted model) is needed before it carries real PHI.
 
 ## Open questions
 
@@ -83,7 +74,7 @@ These block the parts not built. The code exposes an interface for each so it ca
 - **Lab tolerance and unit conversion tables** (PRD open question 2). The tolerance is `0.0` placeholder; units must match exactly; there is no conversion.
 - **Thresholds** (`config/policy/default.yaml`) are placeholders until the model is calibrated.
 - **Missing resource types** produce per-assertion `VERIFICATION_ERROR`, but FHIR parse failures block the whole document (architecture 7.1 and 7.2 #3 differ). This build follows both: parse failures block, missing types affect only dependent assertions.
-- **Audit schema** is a placeholder. The architecture's PostgreSQL schema is not built.
+- **Audit store:** DATABASE.md's PostgreSQL schema is built (`db/schema.sql`, Alembic revision 0001). The older JSONL log is gone.
 - **Latency budget** (800 ms p95) is not measured. No benchmark exists yet.
 - **Approver roles and override flow** (`/v1/override`) are not built.
 
@@ -140,47 +131,93 @@ Without `INTERCEPTOR_TEST_DSN`, the 8 database tests are skipped.
 
 Known gaps in this version: this document-level pipeline (`core/pipeline.py`) still uses the older name-matching verifier, so it never fires rule 1. The newer triple-based verifier (see "Verification core") is used by `/v1/interceptor/verify`. NLI-based verdicts need a model, which is still not approved, so free-text claims that need it block.
 
-## API (API.md v1.0.0): first milestone
+## API (API.md v1.0.0)
 
-Built, with 235 tests (the live PostgreSQL tests run when `INTERCEPTOR_TEST_DSN` is set):
+Every endpoint in API.md is built, except where an open decision is listed below.
 
 | Area | Endpoint or part | Status |
 |---|---|---|
-| Health | `GET /v1/health` (no auth), `GET /v1/health/ready` (503 if the DB is down) | Built |
-| Errors | Envelope from 11.1, codes table from 11.2 (subset), no text or IDs in messages | Built |
-| Headers | `X-Request-Id` (echoed if a UUID), `X-Interceptor-Version: 1.0.0`, `X-Interception-Time-MS` | Built |
-| Limits | 2 MiB body check (Content-Length), JSON content type (415) | Built |
-| Auth | Bearer JWT, ES256 or RS256, audience `clinical-interceptor`, lifetime at most 15 min, scopes (2.2) | Built. Default is deny-all. |
-| Decompose | `POST /v1/interceptor/decompose`: 201 for a new note, 200 for a duplicate | Built |
-| Verify | `POST /v1/interceptor/verify`: `VerificationResult` shape, optional VERIFY trace | Built |
-| Legacy | `POST /v1/verify` (full pipeline, now requires a token) | Kept |
+| Health | `GET /v1/health` (no auth), `GET /v1/health/ready` (503 if the database is down) | Built |
+| Proxy | `POST /v1/chat/completions/intercept`, non-streaming and streaming (SSE) | Built |
+| Decompose | `POST /v1/interceptor/decompose` (201 new, 200 replay, 409 key reused) | Built |
+| Verify | `POST /v1/interceptor/verify` | Built |
+| Audit | `POST /v1/interceptor/audit` (201, 200 replay, 409, 422, 503) | Built |
+| Reads | `GET /v1/interceptor/notes/{id}`, `GET /v1/interceptor/audit/reports/{id}` | Built |
+| Legacy | `POST /v1/verify` (full document pipeline) | Kept, behind the same auth |
+| Errors | Envelope from 11.1, the codes in use from 11.2 | Built |
+| Headers | `X-Request-Id`, `X-Interceptor-Version`, `X-Interception-Time-MS`, `X-Interception-Status`, `X-Trace-Id`, `X-Upstream-Time-MS`, `RateLimit-*`, `Retry-After` | Built |
+| Limits | 2 MiB body, note and bundle limits, 100 messages, JSON content type, 60 requests per minute per client | Built |
+| Migrations | Alembic revision 0001 applies `db/schema.sql` unchanged | Built |
 
-Not built: the proxy `/v1/chat/completions/intercept` (the upstream provider is undecided), `/v1/interceptor/audit` and the report and note reads, idempotency replay (8.3), mTLS, rate limiting, and streaming.
+### Security (every clinical endpoint needs both factors)
+
+1. **Client certificate.** The certificate fingerprint must be in the client registry. In production, a reverse proxy terminates mTLS and forwards the SHA-256 fingerprint in `X-Client-Cert-SHA256` with a shared secret in `X-Proxy-Secret`. The application trusts those headers only from a trusted proxy address with a matching secret. Anything else counts as no certificate (`403 AUTH_MTLS_REQUIRED`). An empty registry refuses everything.
+2. **Bearer token.** ES256 or RS256, audience `clinical-interceptor`, lifetime at most 15 minutes, with the scope for the endpoint (`401 AUTH_TOKEN_INVALID`, `403 AUTH_SCOPE_INSUFFICIENT`).
+3. **Rate limit** per certificate identity (`429 RATE_LIMITED` with `Retry-After`).
+
+The certificate is checked first, then the token, then the scope, so an unauthenticated caller never sees a schema error. For local development, `scripts/dev_server.py` terminates TLS in uvicorn itself, using `api/dev_tls.py` to hand the client certificate to the application.
 
 ### Configuration
 
-- `INTERCEPTOR_JWT_PUBLIC_KEY_FILE`: PEM public key for bearer tokens. If unset, every token is refused.
-- Other variables as before: `INTERCEPTOR_DATABASE_URL`, `INTERCEPTOR_PSEUDO_KEY`, `INTERCEPTOR_POLICY`, `INTERCEPTOR_FHIR_DIR`.
+| Variable | Purpose |
+|---|---|
+| `INTERCEPTOR_DATABASE_URL` (required) | PostgreSQL DSN. Apply the schema first: `python -m alembic upgrade head` |
+| `INTERCEPTOR_PSEUDO_KEY` (required, 16 bytes or more) | Secret for patient and encounter pseudo-IDs |
+| `INTERCEPTOR_JWT_PUBLIC_KEY_FILE` | PEM public key for bearer tokens. Unset: every token is refused |
+| `INTERCEPTOR_MTLS_REGISTRY` | JSON file of registered client certificates. Unset: every clinical request is refused |
+| `INTERCEPTOR_TRUSTED_PROXIES`, `INTERCEPTOR_PROXY_SECRET` | Address of the reverse proxy and the shared secret it sends |
+| `INTERCEPTOR_UPSTREAM_BASE_URL`, `INTERCEPTOR_UPSTREAM_API_KEY`, `INTERCEPTOR_MODEL_ROUTES` | OpenAI-compatible upstream and the logical-to-provider model map (JSON). Unset: the proxy endpoint refuses |
+| `INTERCEPTOR_RATE_LIMIT_PER_MINUTE` | Default 60 |
+| `INTERCEPTOR_NLI_MODEL_PATH`, `INTERCEPTOR_NLI_MODEL_LOCK` | A local NLI model directory and a `{"sha256": ...}` lock file. If set, the model must load, match the lock, and pass a warm-up check, or the service refuses to start |
 
-### Blocking gaps before any deployment
+### Run it for real (local)
 
-1. **mTLS is not enforced.** API.md 2.1 requires a bearer token and a client certificate on every clinical endpoint. Bearer is enforced here, and mTLS must be enforced at the internal load balancer. Do not expose the service to clients until this is in place.
-2. **Some claims need the NLI model.** A claim with unresolved candidates (for example one that only shares a word with a fact) returns `503 INTERCEPT_VERIFIER_UNAVAILABLE`. One such claim fails the whole request.
-3. **Idempotency-Key is validated but replay is not stored.** A duplicate note returns the existing note ID because of the database uniqueness rule, but a reused key with a different body is not rejected with 409.
+```bash
+bash scripts/gen_test_certs.sh                       # test CA, server, two client certificates, a JWT key pair
+python -m alembic upgrade head                       # needs INTERCEPTOR_DATABASE_URL
+python scripts/dev_server.py --port 8443             # TLS with a required client certificate
+python scripts/smoke.py --base https://127.0.0.1:8443 --pseudo-key <the server's key>
+```
+
+The smoke test checks that a connection with no certificate is refused at the TLS handshake, that a CA-signed but unregistered certificate gets 403, and then walks decompose, verify, audit and both reads. It passed against a migrated PostgreSQL 18 database.
+
+### How the proxy behaves
+
+- **Before the upstream is called:** the request is validated, the bundle is parsed, the patient must match, and the model must be in the routing table. A request that fails any of these is never forwarded. The FHIR bundle and the interception policy are never sent upstream.
+- **Non-streaming:** all output is verified, the release policy is applied, and the audit record is written before the response is returned. If the audit write fails, the answer is `503 AUDIT_WRITE_FAILED` with no content.
+- **Streaming:** each sentence is verified and its audit rows are written before it is released. A verdict event always comes before the text it covers. A slow sentence is withheld as `[WITHHELD: VERIFICATION_TIMEOUT]` and the stream continues. A verifier or audit failure ends the stream with an `error` event and `[DONE]`, and never a `finish_reason: "stop"`. Upstream errors before the first byte are ordinary JSON errors.
+- **Anything that cannot be verified** is blocked. Without the NLI model that includes most free text, so a real model's prose will usually come back `BLOCKED`. This is the fail-closed design, not a bug, and it is the main limit of this build.
+
+### Decisions still open
+
+1. **HTTP trailers (Gate G4).** uvicorn sends trailers only over HTTP/2 to clients that ask for them, and OpenAI-style clients use HTTP/1.1. `X-Interception-Time-MS` is therefore not sent as a trailer on streams. The total time is in `stream.complete`. API.md allows that for clients that cannot read trailers, but the header itself is not delivered. Options: amend API.md to drop the trailer, or switch server. `X-Interception-First-Release-MS` is not sent for the same reason.
+2. **`BLOCK_RESPONSE` mid-stream.** API.md does not say what it means once earlier sentences are already released. This build stops the stream, sends `stream.complete` with status `BLOCKED` and `finish_reason: content_filter`, and keeps what was already released (it was audited).
+3. **The NLI model (Gate G1).** The loader is built (`nli/scorer.py`): it reads the label order from the model's own config, refuses anything but entailment, neutral and contradiction, checks the directory hash against a lock file, and runs a warm-up check. It needs `sentence-transformers` and a checkpoint, and no checkpoint is chosen or bundled. Without one, claims that need it fail closed.
+4. **Per-client authorization.** API.md says reads return 404 for a patient the client may not see, but does not define which client may see which patient. Today any authenticated client can read any note or report.
+5. **Layout, preflight and tooling.** The code is still in the prototype layout, not `src/interceptor/`. Docker Compose, ruff, mypy and pre-commit from PLAN phase 1 are not set up, and the preflight is still open.
+
+### Choices made without a schema change
+
+DATABASE.md has no table for reports or idempotency keys, and its payload rule allows only IDs and codes. So:
+
+- **Idempotency keys** are stored as a hash of (client, key) plus a hash of the body inside trace payloads, and found by JSON containment. A key replayed with the same body returns the original result. A different body is `409`. Keys expire after 24 hours. A key used only on a duplicate note (nothing new written) is not remembered.
+- **Reports** are rebuilt from the ATTRIBUTE trace payload and the linked events.
+- **Client-written explanations** on attribution spans are validated but not stored, because they are free text. Responses carry server-generated explanations from a fixed template, so the text differs from API.md's examples.
+- **Notes** return an index of claim IDs and offsets, not claim text, because claim text is not stored.
+- **Streaming claim IDs** come from a per-stream placeholder hash (the final text is not known yet), so they do not match IDs derived from the final note hash. The note row gets its real hash when the stream ends, unless the same text was already audited for that patient.
 
 ### Conflicts and choices in API.md (please review)
 
-- **401 vs 403 for a missing token:** section 10 says 403, the error table says 401. This build uses 401 (`AUTH_TOKEN_INVALID`) for missing, expired, or badly signed tokens, and 403 (`AUTH_SCOPE_INSUFFICIENT`) for a missing scope.
+- **401 vs 403 for a missing token:** section 10 says 403, the error table says 401. This build uses 401 for a missing, expired or badly signed token, and 403 for a missing scope or certificate.
 - **Retryable column:** garbled in the PDF extraction. Values follow what each code means.
-- **Entities:** decompose links entities from the local lexicon (`knowledge/lexicon_seed.csv`, 8 synthetic entries). A claim with no match keeps `entities: []`. The lexicon needs clinical review and is far from complete.
-- **Claim IDs:** decompose uses the spec's derivation (5.1.4). The events written by `/v1/verify` (the legacy pipeline) still use the earlier derivation, so the two do not match yet.
-- **Offsets in the examples:** API.md's own example offsets (48–85, 66–80) have the same errors as DATABASE.md 4.4. The API computes offsets from the text.
-- **Policy override:** `min_confidence_entailment` is accepted. The deterministic verifier's confidence is always 1.0, so the threshold has no effect yet.
-- **Rule 1 (drug-allergy conflict):** fires in `/v1/interceptor/verify` for drugs in `knowledge/drug_class_map.yaml` (only amoxicillin to penicillin so far). A drug with no class is not checked, and the trace records `drug_class_unknown`.
-- **Limits:** the 2 MiB check reads the Content-Length header only. Chunked bodies are not limited yet.
-- **Paths changed:** `/healthz` and `/readyz` are replaced by `/v1/health` and `/v1/health/ready`.
-- **Non-spec warning code:** `INTERCEPT_CLAIM_SKIPPED` marks a sentence that produced no usable claim. The spec does not define it.
-
+- **Examples that cannot work as written** (each pinned by a test in `tests/contract`): the example bundles have a Patient with no identifier, so the pseudo-ID cannot be checked (refused with `INTERCEPT_BUNDLE_INVALID`); the audit example's claim IDs and offsets do not match any real note (refused with `AUDIT_CLAIM_MISMATCH`); and the redacted spans in 4.1.3 (`[0,37]`, `[64,106]`) do not match the text (the real offsets are `[0,36]` and `[63,108]`).
+- **Streaming order:** the 4.2 example shows a sentence's text before its verdict event for one sentence, which breaks rule 1 in 4.3. This build always sends the verdict first.
+- **A withheld sentence** is reported as `risk_severity: CRITICAL`, `action: REDACTED`, because the event's action and severity sets are closed and have no value for "timed out".
+- **Category table (7.1.2):** `TEMPORAL_MISMATCH` is not evaluated (the audit request has no date for the matched fact), and "entity is a diagnosis" is approximated as a SNOMED CT entity that is not an allergy concept.
+- **Token and certificate are not bound:** the token's `sub` need not equal the certificate's client ID. Both must be valid, and the rate limit is per certificate.
+- **Limits:** the 2 MiB check reads the `Content-Length` header only, and the rate limiter is in memory per worker.
+- **Policy override on `/verify`:** `min_confidence_entailment` is accepted. It is applied in the proxy, but has no effect on `/verify` while the verifier's confidence is always 1.0.
+- **Non-spec warning code:** `INTERCEPT_CLAIM_SKIPPED` marks a sentence that produced no usable claim.
 
 ## Verification core (PLAN phases 2.4, 3.3, 4.2 to 4.6, without the NLI model)
 

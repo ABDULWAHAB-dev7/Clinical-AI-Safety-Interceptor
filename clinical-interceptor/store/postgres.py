@@ -10,7 +10,7 @@ import psycopg
 from psycopg.types.json import Jsonb
 
 from core.errors import ErrorClass, PipelineError
-from store.records import NoteRegistration
+from store.records import IDEMPOTENCY_TTL_SECONDS, AuditRefs, NoteRegistration, RecordRefs
 
 SCHEMA_PATH = pathlib.Path(__file__).resolve().parent.parent / "db" / "schema.sql"
 
@@ -149,40 +149,15 @@ class PostgresAuditStore:
                     pipeline_status=request.pipeline_status,
                     claim_count=request.claim_count,
                 )
-                verify_trace = None
+                trace_ids = {}
                 for st in request.stages:
-                    trace = add_trace(
-                        conn,
-                        note_id=note_id,
-                        patient_pseudo_id=request.patient_pseudo_id,
-                        stage=st.stage,
-                        component_name=st.component_name,
-                        component_version=st.component_version,
-                        input_sha256=st.input_sha256,
-                        status=st.status,
-                        output_payload=st.output_payload,
-                        error_message=st.error_message,
-                        latency_ms=st.latency_ms,
-                    )
-                    if st.stage == "VERIFY":
-                        verify_trace = trace
+                    trace_ids[st.stage] = _add_stage(conn, note_id, request.patient_pseudo_id, st)
+                event_ids = {}
                 for ev in request.events:
-                    add_event(
-                        conn,
-                        trace_id=verify_trace,
-                        note_id=note_id,
-                        patient_pseudo_id=request.patient_pseudo_id,
-                        claim_id=ev.claim_id,
-                        category=ev.category,
-                        risk_severity=ev.risk_severity,
-                        nli_class=ev.nli_class,
-                        confidence=ev.confidence,
-                        claim_text=ev.claim_text,
-                        risk_rule=ev.risk_rule,
-                        matched_fhir_ref=ev.matched_fhir_ref,
-                        doc_char_start=ev.doc_char_start,
-                        doc_char_end=ev.doc_char_end,
-                    )
+                    event_ids[ev.claim_id] = _add_event_record(
+                        conn, trace_ids.get("VERIFY"), note_id, request.patient_pseudo_id, ev)[0]
+                return RecordRefs(str(note_id), {k: str(v) for k, v in trace_ids.items()},
+                                  {k: str(v) for k, v in event_ids.items()})
         except psycopg.Error as exc:
             raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
 
@@ -245,6 +220,199 @@ class PostgresAuditStore:
                 return str(_add_stage(conn, note_id, row[0], stage))
         except psycopg.Error as exc:
             raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+
+    # ---- idempotency, reads, and audit reports (no schema changes: payloads hold hashes and codes only) ----
+    def find_idempotency(self, scope, ttl_seconds=IDEMPOTENCY_TTL_SECONDS):
+        """Looks the key up in trace payloads by JSON containment (the GIN index on output_payload serves this)."""
+        try:
+            with self._connect() as conn:
+                row = conn.execute(
+                    """
+                    SELECT output_payload, stage, note_id, created_at FROM audit_traces
+                    WHERE output_payload @> %s AND created_at > now() - make_interval(secs => %s)
+                    ORDER BY created_at DESC LIMIT 1
+                    """,
+                    (Jsonb({"idempotency": {"scope": scope}}), ttl_seconds),
+                ).fetchone()
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+        if row is None:
+            return None
+        payload = row[0]
+        return {"body_sha256": payload["idempotency"]["body_sha256"], "stage": row[1], "note_id": str(row[2]),
+                "report_id": payload.get("report_id"), "created_at": row[3]}
+
+    def get_note(self, note_id):
+        try:
+            with self._connect() as conn:
+                row = conn.execute(
+                    """
+                    SELECT note_id, patient_pseudo_id, encounter_pseudo_id, source_system, note_type, note_sha256,
+                           char_length, claim_count, pipeline_status, received_at, completed_at
+                    FROM intercepted_notes WHERE note_id = %s
+                    """,
+                    (note_id,),
+                ).fetchone()
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+        if row is None:
+            return None
+        keys = ("note_id", "patient_pseudo_id", "encounter_pseudo_id", "source_system", "note_type", "note_sha256",
+                "char_length", "claim_count", "pipeline_status", "received_at", "completed_at")
+        note = dict(zip(keys, row))
+        note["note_id"] = str(note["note_id"])
+        note["note_sha256"] = note["note_sha256"].strip()
+        return note
+
+    def get_claim_index(self, note_id):
+        try:
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT output_payload -> 'claims' FROM audit_traces WHERE note_id = %s AND stage = 'EXTRACT' "
+                    "AND output_payload ? 'claims' ORDER BY created_at DESC LIMIT 1",
+                    (note_id,),
+                ).fetchone()
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+        return row[0] if row else None
+
+    def get_trace(self, trace_id):
+        try:
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT stage, note_id FROM audit_traces WHERE trace_id = %s", (trace_id,)
+                ).fetchone()
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+        return {"trace_id": str(trace_id), "stage": row[0], "note_id": str(row[1])} if row else None
+
+    def write_audit_report(self, *, note_id, stage, events, pipeline_status, claim_count):
+        """One transaction: the ATTRIBUTE trace, its events, and the note status. Any failure rolls all of it back."""
+        try:
+            with self._connect() as conn:
+                row = conn.execute(
+                    "SELECT patient_pseudo_id FROM intercepted_notes WHERE note_id = %s FOR UPDATE", (note_id,)
+                ).fetchone()
+                if row is None:
+                    raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, "note disappeared")
+                patient = row[0]
+                trace = conn.execute(
+                    """
+                    INSERT INTO audit_traces
+                        (note_id, patient_pseudo_id, stage, component_name, component_version, input_sha256,
+                         output_payload, status, error_message, latency_ms)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING trace_id, created_at
+                    """,
+                    (note_id, patient, stage.stage, stage.component_name, stage.component_version,
+                     stage.input_sha256, Jsonb(stage.output_payload), stage.status, stage.error_message,
+                     stage.latency_ms),
+                ).fetchone()
+                created = tuple(
+                    (e.claim_id, *_add_event_record(conn, trace[0], note_id, patient, e)) for e in events
+                )
+                conn.execute(
+                    "UPDATE intercepted_notes SET pipeline_status = %s, claim_count = %s, completed_at = now() "
+                    "WHERE note_id = %s",
+                    (pipeline_status, claim_count, note_id),
+                )
+                return AuditRefs(str(trace[0]), trace[1], tuple((c, str(i), d) for c, i, d in created))
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+
+    def get_report(self, report_id):
+        try:
+            with self._connect() as conn:
+                trace = conn.execute(
+                    "SELECT trace_id, note_id, patient_pseudo_id, output_payload, created_at FROM audit_traces "
+                    "WHERE stage = 'ATTRIBUTE' AND output_payload @> %s ORDER BY created_at LIMIT 1",
+                    (Jsonb({"report_id": report_id}),),
+                ).fetchone()
+                if trace is None:
+                    return None
+                rows = conn.execute(
+                    """
+                    SELECT event_id, claim_id, category, risk_severity, nli_class, risk_rule, confidence,
+                           matched_fhir_ref, detected_at
+                    FROM hallucination_events WHERE trace_id = %s ORDER BY claim_id
+                    """,
+                    (trace[0],),
+                ).fetchall()
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+        keys = ("event_id", "claim_id", "category", "risk_severity", "nli_class", "risk_rule", "confidence",
+                "matched_fhir_ref", "detected_at")
+        events = []
+        for row in rows:
+            event = dict(zip(keys, row))
+            event["event_id"] = str(event["event_id"])
+            event["confidence"] = float(event["confidence"])
+            events.append(event)
+        return {"trace_id": str(trace[0]), "note_id": str(trace[1]), "patient_pseudo_id": trace[2],
+                "payload": trace[3], "created_at": trace[4], "events": events}
+
+    # ---- streaming: each sentence is audited before it is released ----
+    def stream_begin(self, *, patient_pseudo_id, encounter_pseudo_id, source_system, note_type, placeholder_sha):
+        try:
+            with self._connect() as conn:
+                return str(upsert_note(
+                    conn, patient_pseudo_id=patient_pseudo_id, encounter_pseudo_id=encounter_pseudo_id,
+                    source_system=source_system, note_type=note_type, note_sha256=placeholder_sha, char_length=0,
+                    pipeline_status="RECEIVED", claim_count=0))
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+
+    def stream_sentence(self, *, note_id, stage, events):
+        try:
+            with self._connect() as conn:
+                patient = conn.execute(
+                    "SELECT patient_pseudo_id FROM intercepted_notes WHERE note_id = %s", (note_id,)
+                ).fetchone()[0]
+                trace_id = _add_stage(conn, note_id, patient, stage)
+                ids = {e.claim_id: str(_add_event_record(conn, trace_id, note_id, patient, e)[0]) for e in events}
+                return str(trace_id), ids
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+
+    def stream_finish(self, *, note_id, note_sha256, char_length, claim_count, pipeline_status, stage):
+        """Sets the real hash unless the same text was already audited for this patient, then status and final trace."""
+        try:
+            with self._connect() as conn:
+                patient = conn.execute(
+                    "SELECT patient_pseudo_id FROM intercepted_notes WHERE note_id = %s", (note_id,)
+                ).fetchone()[0]
+                changed = conn.execute(
+                    """
+                    UPDATE intercepted_notes SET note_sha256 = %s
+                    WHERE note_id = %s AND NOT EXISTS (
+                        SELECT 1 FROM intercepted_notes other
+                        WHERE other.patient_pseudo_id = %s AND other.note_sha256 = %s)
+                    """,
+                    (note_sha256, note_id, patient, note_sha256),
+                ).rowcount
+                conn.execute(
+                    "UPDATE intercepted_notes SET char_length = %s, claim_count = %s, pipeline_status = %s, "
+                    "completed_at = now() WHERE note_id = %s",
+                    (char_length, claim_count, pipeline_status, note_id),
+                )
+                return str(_add_stage(conn, note_id, patient, stage))
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+
+
+def _add_event_record(conn, trace_id, note_id, patient_pseudo_id, ev):
+    """Inserts one hallucination_events row. Returns (event_id, detected_at)."""
+    return conn.execute(
+        """
+        INSERT INTO hallucination_events
+            (trace_id, note_id, patient_pseudo_id, claim_id, category, risk_severity, nli_class, risk_rule,
+             confidence, matched_fhir_ref, claim_text, doc_char_start, doc_char_end)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING event_id, detected_at
+        """,
+        (trace_id, note_id, patient_pseudo_id, ev.claim_id, ev.category, ev.risk_severity, ev.nli_class,
+         ev.risk_rule, ev.confidence, ev.matched_fhir_ref, ev.claim_text, ev.doc_char_start, ev.doc_char_end),
+    ).fetchone()
 
 
 def _add_stage(conn, note_id, patient_pseudo_id, stage):

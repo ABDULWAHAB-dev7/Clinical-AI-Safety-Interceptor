@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from api.app import create_app
 from api.auth import JwtVerifier
 from store import postgres as db
-from tests.support import POLICY_PATH, FHIR_DIR, PUBLIC_PEM, auth_headers
+from tests.support import security, mtls_headers, POLICY_PATH, FHIR_DIR, PUBLIC_PEM, auth_headers
 from tests.support_bundle import BUNDLE
 from tests.unit.test_interceptor_api import KEY, PID, decompose_body
 
@@ -31,7 +31,7 @@ class InterceptorEndpointDbTests(unittest.TestCase):
             db.apply_schema(conn)
         cls.store = db.PostgresAuditStore(DSN)
         app = create_app(policy_path=POLICY_PATH, fhir_dir=FHIR_DIR, store=cls.store, pseudo_key=KEY,
-                         verifier=JwtVerifier(PUBLIC_PEM))
+                         verifier=JwtVerifier(PUBLIC_PEM), **security())
         cls.client = TestClient(app)
 
     def setUp(self):

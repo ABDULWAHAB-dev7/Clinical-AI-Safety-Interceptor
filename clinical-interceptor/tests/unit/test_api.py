@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from api.app import create_app
 from api.auth import JwtVerifier
 from store.records import MemoryAuditStore
-from tests.support import FHIR_DIR, POLICY_PATH, PUBLIC_PEM, auth_headers, load_example, make_token
+from tests.support import security, mtls_headers, FHIR_DIR, POLICY_PATH, PUBLIC_PEM, auth_headers, load_example, make_token
 
 KEY = b"api-test-key-0123456789abcdef"
 
@@ -24,7 +24,7 @@ class _DownStore(MemoryAuditStore):
 
 def client(store=None):
     app = create_app(policy_path=POLICY_PATH, fhir_dir=FHIR_DIR, store=store or MemoryAuditStore(),
-                     pseudo_key=KEY, verifier=JwtVerifier(PUBLIC_PEM))
+                     pseudo_key=KEY, verifier=JwtVerifier(PUBLIC_PEM), **security())
     return TestClient(app)
 
 
@@ -37,7 +37,7 @@ class LegacyVerifyTests(unittest.TestCase):
         return self.client.post("/v1/verify", json=payload, headers=auth_headers(), **kwargs)
 
     def test_requires_a_bearer_token(self):
-        r = self.client.post("/v1/verify", json=load_example("verify_clean.json"))
+        r = self.client.post("/v1/verify", json=load_example("verify_clean.json"), headers=mtls_headers())
         self.assertEqual(r.status_code, 401)
         self.assertEqual(r.json()["error"]["code"], "AUTH_TOKEN_INVALID")
 
@@ -103,7 +103,7 @@ class HealthAndContractTests(unittest.TestCase):
 
     def test_expired_legacy_token_is_refused(self):
         r = client().post("/v1/verify", json=load_example("verify_clean.json"),
-                          headers={"Authorization": f"Bearer {make_token(issued_at=1_000_000)}"})
+                          headers={"Authorization": f"Bearer {make_token(issued_at=1_000_000)}"} | mtls_headers())
         self.assertEqual(r.status_code, 401)
 
 
