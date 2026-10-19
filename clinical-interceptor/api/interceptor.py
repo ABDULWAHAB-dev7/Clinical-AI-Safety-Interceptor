@@ -14,17 +14,17 @@ from fastapi import APIRouter, Header, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from core.claims import (
-    VerificationError,
-    decompose_claims,
-    overall_severity,
-    summary,
-    verify_claims,
-)
-from core.errors import ErrorClass, PipelineError
+from core.claims import decompose_claims, overall_severity, summary
+from core.contracts import MedicalEntity
+from core.entities import entity_from_model
+from core.errors import PipelineError
 from core.pipeline import PIPELINE_VERSION
 from core.pseudo import patient_pseudo_id
-from fhir.bundle import parse_bundle
+from core.verify import VerificationError, verify_claims
+from fhir.bundle import MRN_SYSTEM
+from fhir.ingest import RESOURCE_FILES, ingest
+from fhir.models import Patient
+from fhir.triples import triples_from_ingest
 from store.records import StageRecord
 from .auth import require_scope
 from .errors import InterceptionError
@@ -38,7 +38,7 @@ UUID4_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-
 NOTE_TEXT_MAX = 200_000  # code points (API.md 13)
 BUNDLE_ENTRY_MAX = 500  # API.md 13
 DECOMPOSER_VERSION = f"decomposer-rules-{PIPELINE_VERSION}"
-VERIFIER_VERSION = f"deterministic-verifier-{PIPELINE_VERSION}"
+VERIFIER_VERSION = f"verifier-{PIPELINE_VERSION}+knowledge-seed"
 
 
 # ---- decompose -----------------------------------------------------------------------------------
@@ -79,7 +79,8 @@ def decompose_note(
         raise InterceptionError("INTERCEPT_NOTE_TOO_LARGE", "Note text exceeds 200,000 code points.", "note.text")
 
     note_sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    claims, warnings = decompose_claims(text, note_sha, note_id="")
+    claims, warnings = decompose_claims(text, note_sha, note_id="", knowledge=request.app.state.knowledge,
+                                        include_entities=body.options.include_entities)
     if len(claims) > body.options.max_claims:
         raise InterceptionError("INTERCEPT_CLAIM_LIMIT_EXCEEDED", "The note yields more claims than max_claims.",
                                 "options.max_claims")
@@ -131,7 +132,7 @@ class ClaimInput(BaseModel):
     claim_text: str = Field(min_length=1, max_length=512)
     char_start: int = Field(ge=0)
     char_end: int = Field(ge=0)
-    entities: list = Field(default_factory=list)
+    entities: list[MedicalEntity] = Field(default_factory=list)
 
     @field_validator("char_end")
     @classmethod
@@ -167,24 +168,52 @@ class VerifyApiRequest(BaseModel):
 def verify(body: VerifyApiRequest, request: Request):
     state = request.app.state
     raw = body.fhir_bundle
-    if raw.get("type") != "collection":
-        raise InterceptionError("INTERCEPT_BUNDLE_INVALID", "fhir_bundle.type must be 'collection'.", "fhir_bundle.type")
+    if raw.get("resourceType") != "Bundle" or raw.get("type") != "collection":
+        raise InterceptionError("INTERCEPT_BUNDLE_INVALID", "fhir_bundle must be a Bundle with type 'collection'.",
+                                "fhir_bundle.type")
     entries = raw.get("entry", [])
+    if not isinstance(entries, list):
+        raise InterceptionError("INTERCEPT_BUNDLE_INVALID", "fhir_bundle.entry must be a list.", "fhir_bundle.entry")
     if len(entries) > BUNDLE_ENTRY_MAX:
         raise InterceptionError("INTERCEPT_BUNDLE_TOO_LARGE", "The bundle exceeds 500 entries.", "fhir_bundle.entry")
-    try:
-        bundle = parse_bundle(raw, encounter_ref="request-body")
-    except PipelineError:
-        raise InterceptionError("INTERCEPT_BUNDLE_INVALID", "fhir_bundle is not a valid FHIR Bundle.", "fhir_bundle")
-    if bundle.parse_failures:
+
+    warnings = []
+    declared = []
+    for index, entry in enumerate(entries):
+        resource = entry.get("resource") if isinstance(entry, dict) else None
+        rtype = resource.get("resourceType") if isinstance(resource, dict) else None
+        if rtype in RESOURCE_FILES:
+            declared.append((rtype, f"entry[{index}]", resource))
+        else:
+            warnings.append({"code": "INTERCEPT_UNSUPPORTED_RESOURCE",
+                             "message": "A resource type is not supported and was ignored.",
+                             "param": f"fhir_bundle.entry[{index}]"})
+
+    ingested = ingest(declared)
+    if ingested.rejected:
+        unresolved = any("is not a Patient in this batch" in reason for _, _, reason in ingested.rejected)
+        if unresolved:
+            raise InterceptionError("INTERCEPT_FHIR_REFERENCE_UNRESOLVED",
+                                    "A subject or patient reference does not resolve to a Patient in the bundle.",
+                                    "fhir_bundle.entry")
         raise InterceptionError("INTERCEPT_BUNDLE_INVALID", "A resource in fhir_bundle fails validation.",
                                 "fhir_bundle.entry")
-    if not bundle.patient_mrn:
-        raise InterceptionError("INTERCEPT_BUNDLE_INVALID", "fhir_bundle has no Patient identifier.", "fhir_bundle")
-    if patient_pseudo_id(bundle.patient_mrn, state.pseudo_key) != body.patient_pseudo_id:
+    patients = [r for (t, _), r in ingested.resources.items() if t == "Patient"]
+    if len(patients) != 1:
+        raise InterceptionError("INTERCEPT_BUNDLE_INVALID", "fhir_bundle must contain exactly one Patient.",
+                                "fhir_bundle.entry")
+    mrn = _mrn(patients[0])
+    if not mrn:
+        raise InterceptionError("INTERCEPT_BUNDLE_INVALID", "The Patient in fhir_bundle has no identifier.",
+                                "fhir_bundle.entry")
+    if patient_pseudo_id(mrn, state.pseudo_key) != body.patient_pseudo_id:
         raise InterceptionError("INTERCEPT_PATIENT_MISMATCH",
                                 "The patient in fhir_bundle does not match patient_pseudo_id.",
                                 "patient_pseudo_id")
+    for _ in ingested.unmapped:
+        warnings.append({"code": "INTERCEPT_UNMAPPED_CODE",
+                         "message": "A resource has a code outside SNOMED CT, LOINC and RxNorm.",
+                         "param": "fhir_bundle.entry"})
 
     if body.note_id is not None:
         owner = _note_owner(state.store, str(body.note_id))
@@ -194,12 +223,18 @@ def verify(body: VerifyApiRequest, request: Request):
             raise InterceptionError("AUDIT_NOTE_PATIENT_MISMATCH", "note_id belongs to a different patient.",
                                     "patient_pseudo_id")
 
-    claims = [c.model_dump() for c in (body.claims or [])]
+    claims = [
+        {"claim_id": c.claim_id, "claim_text": c.claim_text, "char_start": c.char_start,
+         "entities": [entity_from_model(e) for e in c.entities]}
+        for c in (body.claims or [])
+    ]
+    triples = triples_from_ingest(ingested, state.knowledge)
     try:
-        results = verify_claims(claims, bundle, state.policy, VERIFIER_VERSION)
+        outcome = verify_claims(claims, triples, state.knowledge, VERIFIER_VERSION, state.nli_model)
     except VerificationError:
         raise InterceptionError("INTERCEPT_VERIFIER_UNAVAILABLE",
                                 "A claim cannot be verified without the NLI verifier. No content was released.")
+    results = outcome.results
 
     verify_trace_id = None
     if body.note_id is not None:
@@ -208,7 +243,7 @@ def verify(body: VerifyApiRequest, request: Request):
             component_name="verifier",
             component_version=VERIFIER_VERSION,
             input_sha256=_digest([c["claim_id"] for c in claims]),
-            output_payload={"results": _count_by(results, "nli_class")},
+            output_payload={"results": _count_by(results, "nli_class"), "claims": outcome.traces},
             status="OK",
         )
         try:
@@ -223,8 +258,15 @@ def verify(body: VerifyApiRequest, request: Request):
         "overall_risk_severity": overall_severity(results),
         "summary": summary(results),
         "results": results,
-        "warnings": [],
+        "warnings": warnings,
     }
+
+
+def _mrn(patient: Patient):
+    for identifier in patient.identifier:
+        if identifier.system == MRN_SYSTEM and identifier.value:
+            return identifier.value
+    return None
 
 
 def _note_owner(store, note_id):

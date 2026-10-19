@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from core.pipeline import MAX_DOCUMENT_CHARS, verify_document
+from core.knowledge import load_knowledge
 from core.policy import load_policy
 from .auth import DenyAllVerifier, JwtVerifier, require_scope
 from .errors import envelope, register_error_handlers
@@ -42,14 +43,16 @@ class VerifyRequest(BaseModel):
     source_system: str = Field(default="api", min_length=1, max_length=64)
 
 
-def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_model=None):
-    policy = load_policy(policy_path)  # refuses to start without a valid policy (architecture 7.2 #5)
+def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_model=None, knowledge=None):
+    policy = load_policy(policy_path)
+    knowledge = knowledge if knowledge is not None else load_knowledge()  # refuses to start without knowledge files  # refuses to start without a valid policy (architecture 7.2 #5)
     if not isinstance(pseudo_key, (bytes, bytearray)) or len(pseudo_key) < 16:
         raise ValueError("pseudonymization key must be at least 16 bytes")
 
     app = FastAPI(title="Clinical Interceptor", version=CONTRACT_VERSION)
     app.state.store = store
     app.state.policy = policy
+    app.state.knowledge = knowledge
     app.state.pseudo_key = bytes(pseudo_key)
     app.state.fhir_dir = fhir_dir
     app.state.verifier = verifier if verifier is not None else DenyAllVerifier()  # default: refuse everything

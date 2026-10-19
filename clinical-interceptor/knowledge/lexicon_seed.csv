@@ -1,0 +1,11 @@
+# REQUIRES CLINICAL REVIEW. Synthetic seed lexicon for tests; not a terminology source (PLAN A3: local file, no remote lookup).
+# Columns: surface (lowercase), system (snomed|loinc|rxnorm), code, display
+surface,system,code,display
+drug allergies,snomed,416098002,Drug allergy
+drug allergy,snomed,416098002,Drug allergy
+type 2 diabetes,snomed,44054006,Diabetes mellitus type 2
+hba1c,loinc,4548-4,Hemoglobin A1c/Hemoglobin.total in Blood
+hemoglobin a1c,loinc,4548-4,Hemoglobin A1c/Hemoglobin.total in Blood
+amoxicillin,rxnorm,723,Amoxicillin
+metformin,rxnorm,6809,Metformin
+lisinopril,rxnorm,29046,Lisinopril

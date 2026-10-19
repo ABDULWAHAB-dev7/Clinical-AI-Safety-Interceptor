@@ -9,6 +9,7 @@ from api.app import create_app
 from api.auth import JwtVerifier
 from core.pseudo import patient_pseudo_id
 from store.records import MemoryAuditStore
+from tests.support_bundle import BUNDLE, MRN
 from tests.support import (
     ALL_SCOPES,
     FHIR_DIR,
@@ -22,25 +23,8 @@ KEY = b"interceptor-api-test-key-01234"
 IDEM = {"Idempotency-Key": str(uuid.uuid4())}
 NOTE = ("Chief complaint: Follow-up for type 2 diabetes. Patient denies known drug allergies. "
         "HbA1c 8.2% on 2026-09-02. Started amoxicillin 500 mg TID for sinusitis. Blood pressure stable.")
-MRN = "SYNTH-MRN-0001"
 PID = patient_pseudo_id(MRN, KEY)
 ENC = "eid_" + "e" * 64
-
-BUNDLE = {
-    "resourceType": "Bundle",
-    "type": "collection",
-    "entry": [
-        {"resource": {"resourceType": "Patient", "id": "pat-0001",
-                      "identifier": [{"system": "urn:synthetic:mrn", "value": MRN}]}},
-        {"resource": {"resourceType": "AllergyIntolerance", "id": "allergy-penicillin-001",
-                      "code": {"coding": [{"system": "http://snomed.info/sct", "code": "91936005",
-                                           "display": "Allergy to penicillin"}]}}},
-        {"resource": {"resourceType": "MedicationRequest", "id": "mr-1",
-                      "medicationCodeableConcept": {"text": "metformin"}}},
-        {"resource": {"resourceType": "Observation", "id": "obs-1", "status": "final",
-                      "code": {"text": "Hgb"}, "valueQuantity": {"value": 12.1, "unit": "g/dL"}}},
-    ],
-}
 
 
 def decompose_body(text=NOTE, **options):
@@ -189,6 +173,26 @@ class DecomposeTests(Base):
         ).hexdigest()[:12]
         self.assertEqual(first["claim_id"], expected)
 
+    def test_claims_carry_lexicon_entities_with_exact_offsets(self):
+        claims = self.post().json()["claims"]
+        entities = [e for c in claims for e in c["entities"]]
+        self.assertTrue(entities)
+        for e in entities:
+            self.assertEqual(NOTE[e["char_start"]:e["char_end"]], e["surface_text"])
+        by_code = {e["code"]: e for e in entities}
+        self.assertEqual((by_code["416098002"]["char_start"], by_code["416098002"]["char_end"]), (69, 83))
+        self.assertEqual((by_code["723"]["system"], by_code["723"]["surface_text"]),
+                         ("http://www.nlm.nih.gov/research/umls/rxnorm", "amoxicillin"))
+
+    def test_include_entities_false_returns_no_entities(self):
+        claims = self.post(decompose_body(NOTE, include_entities=False)).json()["claims"]
+        self.assertTrue(all(c["entities"] == [] for c in claims))
+
+    def test_claim_without_a_lexicon_match_keeps_an_empty_entity_list(self):
+        claims = self.post().json()["claims"]
+        bp = next(c for c in claims if "Blood pressure" in c["claim_text"])
+        self.assertEqual(bp["entities"], [])
+
     def test_duplicate_note_is_200_with_same_note_id(self):
         first = self.post().json()
         second = self.client.post("/v1/interceptor/decompose", json=decompose_body(),
@@ -239,85 +243,149 @@ class VerifyTests(Base):
                                    headers=IDEM | auth_headers()).json()
         self.note_id = created["note_id"]
 
-    def post(self, claims, **extra):
-        body = {"patient_pseudo_id": PID, "fhir_bundle": BUNDLE, "claims": claims} | extra
+    def post(self, claims, bundle=None, **extra):
+        body = {"patient_pseudo_id": PID, "fhir_bundle": bundle or BUNDLE, "claims": claims} | extra
         return self.client.post("/v1/interceptor/verify", json=body, headers=auth_headers())
 
     @staticmethod
-    def claim(claim_id, text):
-        return {"claim_id": claim_id, "claim_text": text, "char_start": 0, "char_end": len(text)}
+    def claim(claim_id, text, entities=None):
+        body = {"claim_id": claim_id, "claim_text": text, "char_start": 0, "char_end": len(text)}
+        if entities is not None:
+            body["entities"] = entities
+        return body
 
-    def test_contradicted_allergy_is_critical_and_entailed_medication_is_safe(self):
-        r = self.post([
-            self.claim("clm_000000000001", "No known drug allergies"),
-            self.claim("clm_000000000002", "Patient is taking metformin"),
-        ])
+    def results(self, *claims):
+        r = self.post(list(claims))
         self.assertEqual(r.status_code, 200, r.text)
-        body = r.json()
-        by_id = {x["claim_id"]: x for x in body["results"]}
-        allergy = by_id["clm_000000000001"]
-        self.assertEqual(allergy["nli_class"], "CONTRADICTION")
-        self.assertEqual(allergy["risk_severity"], "CRITICAL")
-        self.assertEqual(allergy["risk_rule"], "contradiction_high_risk")
-        self.assertEqual(allergy["matched_fhir_ref"], "AllergyIntolerance/allergy-penicillin-001")
-        med = by_id["clm_000000000002"]
-        self.assertEqual(med["nli_class"], "ENTAILMENT")
-        self.assertEqual((med["risk_severity"], med["risk_rule"]), ("SAFE", "entailed"))
-        self.assertEqual(med["matched_fhir_ref"], "MedicationRequest/mr-1")
+        return {x["claim_id"]: x for x in r.json()["results"]}, r.json()
+
+    def test_allergy_denial_is_contradiction_critical(self):
+        by_id, body = self.results(self.claim("clm_000000000001", "No known drug allergies"))
+        r = by_id["clm_000000000001"]
+        self.assertEqual((r["nli_class"], r["risk_severity"], r["risk_rule"]),
+                         ("CONTRADICTION", "CRITICAL", "contradiction_high_risk"))
+        self.assertEqual(r["matched_fhir_ref"], "AllergyIntolerance/allergy-penicillin-001")
         self.assertEqual(body["overall_risk_severity"], "CRITICAL")
-        self.assertEqual(body["summary"]["by_severity"]["CRITICAL"], 1)
+
+    def test_documented_condition_is_entailed_and_safe(self):
+        by_id, _ = self.results(self.claim("clm_000000000002", "Patient has type 2 diabetes"))
+        r = by_id["clm_000000000002"]
+        self.assertEqual((r["nli_class"], r["risk_severity"], r["risk_rule"]), ("ENTAILMENT", "SAFE", "entailed"))
+        self.assertEqual(r["matched_fhir_ref"], "Condition/cond-t2dm-001")
+
+    def test_denied_active_diagnosis_is_critical(self):
+        by_id, _ = self.results(self.claim("clm_000000000003", "No history of type 2 diabetes"))
+        r = by_id["clm_000000000003"]
+        self.assertEqual((r["nli_class"], r["risk_severity"], r["risk_rule"]),
+                         ("CONTRADICTION", "CRITICAL", "contradiction_high_risk"))
+
+    def test_drug_in_an_allergy_class_is_critical_even_though_nli_is_neutral(self):
+        by_id, _ = self.results(self.claim("clm_000000000004", "Started amoxicillin 500 mg TID"))
+        r = by_id["clm_000000000004"]
+        self.assertEqual(r["nli_class"], "NEUTRAL")
+        self.assertEqual((r["risk_severity"], r["risk_rule"]), ("CRITICAL", "drug_allergy_conflict"))
+        self.assertEqual(r["matched_fhir_ref"], "AllergyIntolerance/allergy-penicillin-001")
+
+    def test_lab_value_match_is_safe_and_mismatch_is_a_warning(self):
+        by_id, _ = self.results(self.claim("clm_000000000005", "HbA1c was 8.2% on 2026-09-02"),
+                                self.claim("clm_000000000006", "HbA1c was 9.5% on 2026-09-02"))
+        match, mismatch = by_id["clm_000000000005"], by_id["clm_000000000006"]
+        self.assertEqual((match["nli_class"], match["risk_severity"]), ("ENTAILMENT", "SAFE"))
+        self.assertEqual((mismatch["nli_class"], mismatch["risk_severity"], mismatch["risk_rule"]),
+                         ("CONTRADICTION", "WARNING", "contradiction"))
+        self.assertEqual(mismatch["matched_fhir_ref"], "Observation/obs-hba1c-001")
+
+    def test_caller_supplied_entities_are_used(self):
+        entity = {"system": "http://snomed.info/sct", "code": "44054006", "display": "Diabetes mellitus type 2",
+                  "surface_text": "T2DM", "char_start": 12, "char_end": 16}
+        by_id, _ = self.results(self.claim("clm_000000000007", "Patient has T2DM", entities=[entity]))
+        self.assertEqual(by_id["clm_000000000007"]["matched_fhir_ref"], "Condition/cond-t2dm-001")
 
     def test_entailment_always_carries_a_matched_reference(self):
-        r = self.post([self.claim("clm_000000000003", "Patient is taking metformin")])
-        for result in r.json()["results"]:
+        by_id, _ = self.results(self.claim("clm_000000000008", "Patient has type 2 diabetes"))
+        for result in by_id.values():
             if result["nli_class"] == "ENTAILMENT":
                 self.assertIsNotNone(result["matched_fhir_ref"])
 
-    def test_claim_without_coded_match_is_503_fail_closed(self):
-        r = self.post([self.claim("clm_000000000004", "Blood pressure stable")])
+    def test_claim_needing_the_nli_model_is_503_fail_closed(self):
+        # "Blood pressure stable" shares the token "blood" with the HbA1c fact, so a candidate is left unresolved.
+        r = self.post([self.claim("clm_000000000009", "Blood pressure stable")])
         self.assertEqual(r.status_code, 503)
         error = r.json()["error"]
         self.assertEqual(error["code"], "INTERCEPT_VERIFIER_UNAVAILABLE")
         self.assertTrue(error["retryable"])
         self.assertEqual(error["clinical_impact"], "BLOCKED")
 
+    def test_one_unverifiable_claim_fails_the_whole_request(self):
+        r = self.post([self.claim("clm_00000000000a", "Patient has type 2 diabetes"),
+                       self.claim("clm_00000000000b", "Blood pressure stable")])
+        self.assertEqual(r.status_code, 503)
+        self.assertNotIn("results", r.json())
+
     def test_patient_mismatch_is_422(self):
         body = {"patient_pseudo_id": "pid_" + "0" * 64, "fhir_bundle": BUNDLE,
-                "claims": [self.claim("clm_000000000005", "Patient is taking metformin")]}
+                "claims": [self.claim("clm_00000000000c", "Patient has type 2 diabetes")]}
         r = self.client.post("/v1/interceptor/verify", json=body, headers=auth_headers())
         self.assertEqual(r.status_code, 422)
         self.assertEqual(r.json()["error"]["code"], "INTERCEPT_PATIENT_MISMATCH")
 
     def test_non_collection_bundle_is_422(self):
-        bad = BUNDLE | {"type": "searchset"}
         r = self.client.post("/v1/interceptor/verify",
-                             json={"patient_pseudo_id": PID, "fhir_bundle": bad, "claims": []},
+                             json={"patient_pseudo_id": PID, "fhir_bundle": BUNDLE | {"type": "searchset"}, "claims": []},
                              headers=auth_headers())
         self.assertEqual(r.status_code, 422)
         self.assertEqual(r.json()["error"]["code"], "INTERCEPT_BUNDLE_INVALID")
 
+    def test_dangling_reference_is_422_unresolved(self):
+        bad = dict(BUNDLE)
+        bad["entry"] = BUNDLE["entry"] + [{"resource": {
+            "resourceType": "Condition", "id": "cond-x", "code": {"coding": [{"system": "http://snomed.info/sct",
+                                                                               "code": "1"}]},
+            "subject": {"reference": "Patient/ghost"}}}]
+        r = self.post([], bundle=bad)
+        self.assertEqual(r.status_code, 422)
+        self.assertEqual(r.json()["error"]["code"], "INTERCEPT_FHIR_REFERENCE_UNRESOLVED")
+
+    def test_invalid_resource_is_422_for_the_whole_request(self):
+        bad = dict(BUNDLE)
+        bad["entry"] = BUNDLE["entry"] + [{"resource": {"resourceType": "Observation", "id": "obs-bad",
+                                                         "status": "final"}}]
+        r = self.post([], bundle=bad)
+        self.assertEqual(r.status_code, 422)
+        self.assertEqual(r.json()["error"]["code"], "INTERCEPT_BUNDLE_INVALID")
+
+    def test_unsupported_resource_type_is_a_warning_not_an_error(self):
+        extra = dict(BUNDLE)
+        extra["entry"] = BUNDLE["entry"] + [{"resource": {"resourceType": "MedicationRequest", "id": "mr-1"}}]
+        r = self.post([self.claim("clm_00000000000d", "Patient has type 2 diabetes")], bundle=extra)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual([w["code"] for w in r.json()["warnings"]], ["INTERCEPT_UNSUPPORTED_RESOURCE"])
+
     def test_duplicate_claim_ids_are_400(self):
-        r = self.post([self.claim("clm_000000000006", "Patient is taking metformin"),
-                       self.claim("clm_000000000006", "Patient is taking metformin")])
+        r = self.post([self.claim("clm_00000000000e", "Patient has type 2 diabetes"),
+                       self.claim("clm_00000000000e", "Patient has type 2 diabetes")])
         self.assertEqual(r.status_code, 400)
 
     def test_unknown_note_is_404(self):
-        r = self.post([self.claim("clm_000000000007", "Patient is taking metformin")],
-                      note_id=str(uuid.uuid4()))
+        r = self.post([self.claim("clm_00000000000f", "Patient has type 2 diabetes")], note_id=str(uuid.uuid4()))
         self.assertEqual(r.status_code, 404)
         self.assertEqual(r.json()["error"]["code"], "NOTE_NOT_FOUND")
 
-    def test_verify_with_note_writes_one_verify_trace(self):
+    def test_verify_with_note_writes_one_verify_trace_with_branches_and_no_text(self):
         before = len(self.store.traces)
-        r = self.post([self.claim("clm_000000000008", "Patient is taking metformin")], note_id=self.note_id)
+        r = self.post([self.claim("clm_000000000010", "Patient has type 2 diabetes")], note_id=self.note_id)
         self.assertEqual(r.status_code, 200)
         self.assertIsNotNone(r.json()["verify_trace_id"])
         self.assertEqual(len(self.store.traces), before + 1)
-        self.assertEqual(self.store.traces[-1]["stage"], "VERIFY")
+        trace = self.store.traces[-1]
+        self.assertEqual(trace["stage"], "VERIFY")
+        claim_trace = trace["payload"]["claims"][0]
+        self.assertEqual(claim_trace["branch"], "condition_documented")
+        self.assertNotIn("diabetes", str(trace["payload"]).lower().replace("cond-t2dm", ""))
 
     def test_verify_without_note_writes_nothing(self):
         before = len(self.store.traces)
-        r = self.post([self.claim("clm_000000000009", "Patient is taking metformin")])
+        r = self.post([self.claim("clm_000000000011", "Patient has type 2 diabetes")])
         self.assertIsNone(r.json()["verify_trace_id"])
         self.assertEqual(len(self.store.traces), before)
 

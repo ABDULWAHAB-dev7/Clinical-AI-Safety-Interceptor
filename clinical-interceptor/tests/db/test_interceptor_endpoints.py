@@ -14,7 +14,8 @@ from api.app import create_app
 from api.auth import JwtVerifier
 from store import postgres as db
 from tests.support import POLICY_PATH, FHIR_DIR, PUBLIC_PEM, auth_headers
-from tests.unit.test_interceptor_api import BUNDLE, KEY, PID, decompose_body
+from tests.support_bundle import BUNDLE
+from tests.unit.test_interceptor_api import KEY, PID, decompose_body
 
 DSN = os.environ.get("INTERCEPTOR_TEST_DSN")
 
@@ -76,7 +77,7 @@ class InterceptorEndpointDbTests(unittest.TestCase):
             "patient_pseudo_id": PID,
             "note_id": note_id,
             "fhir_bundle": BUNDLE,
-            "claims": [{"claim_id": "clm_000000000001", "claim_text": "Patient is taking metformin",
+            "claims": [{"claim_id": "clm_000000000001", "claim_text": "Patient has type 2 diabetes",
                         "char_start": 0, "char_end": 27}],
         }
         r = self.client.post("/v1/interceptor/verify", json=body, headers=auth_headers())

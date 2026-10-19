@@ -1,0 +1,11 @@
+# REQUIRES CLINICAL REVIEW. Placeholder values for tests only; not clinical guidance (PLAN 4.5).
+# Keyed by RxNorm ingredient code. Units are milligrams.
+limits:
+  "723":
+    name: amoxicillin
+    max_single_mg: 1000
+    max_daily_mg: 3000
+  "6809":
+    name: metformin
+    max_single_mg: 1000
+    max_daily_mg: 2550

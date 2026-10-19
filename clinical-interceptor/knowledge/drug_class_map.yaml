@@ -1,0 +1,13 @@
+# REQUIRES CLINICAL REVIEW. Synthetic test values only (PLAN 2.4, 4.5). Not clinical guidance.
+#
+# SNOMED CT codes that denote an allergy concept in general (a claim naming one of these is about allergies).
+allergy_concept_codes:
+  - "416098002"   # Drug allergy
+
+# SNOMED CT allergy code -> drug class documented for that allergy.
+allergy_classes:
+  "91936005": penicillin   # Allergy to penicillin
+
+# RxNorm ingredient -> drug class.
+ingredient_classes:
+  "723": penicillin   # Amoxicillin

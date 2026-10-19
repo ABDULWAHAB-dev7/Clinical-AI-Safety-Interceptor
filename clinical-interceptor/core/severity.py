@@ -23,7 +23,7 @@ class ClaimFacts:
     entity_kinds: FrozenSet[str] = frozenset()
 
 
-def classify_risk(facts: ClaimFacts) -> Tuple[RiskSeverity, Optional[str]]:
+def classify_risk(facts: ClaimFacts, entailment_floor=ENTAILMENT_CONFIDENCE_FLOOR) -> Tuple[RiskSeverity, Optional[str]]:
     if facts.is_medication_claim and facts.matches_allergy:  # priority 1
         return RiskSeverity.CRITICAL, "drug_allergy_conflict"
     if facts.nli_class is NLIClass.CONTRADICTION and facts.entity_kinds & HIGH_RISK_KINDS:  # priority 2
@@ -33,7 +33,7 @@ def classify_risk(facts: ClaimFacts) -> Tuple[RiskSeverity, Optional[str]]:
     if facts.nli_class is NLIClass.NEUTRAL and facts.is_clinical:  # priority 4
         return RiskSeverity.WARNING, "unsupported_clinical"
     if facts.nli_class is NLIClass.ENTAILMENT:  # priorities 5 and 6
-        if facts.confidence >= ENTAILMENT_CONFIDENCE_FLOOR:
+        if facts.confidence >= entailment_floor:
             return RiskSeverity.SAFE, "entailed"
         return RiskSeverity.WARNING, "low_confidence_entailment"
     return RiskSeverity.SAFE, None  # non-clinical neutral text: no rule changes the severity

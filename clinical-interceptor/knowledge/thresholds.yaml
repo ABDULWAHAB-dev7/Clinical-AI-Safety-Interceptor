@@ -1,0 +1,6 @@
+# Starting values (PLAN 4.3, 4.4). Tune on the Phase 7 dev split only, and record the run ID that justified a change.
+contradiction_min: 0.50        # NLI contradiction probability needed to call CONTRADICTION
+entailment_min: 0.85           # min_confidence_entailment (DATABASE.md 2.4)
+value_tolerance_abs: 0.0       # lab value tolerance; placeholder until the tolerance table exists (PRD open question 2)
+nli_timeout_seconds: 5.0       # per NLI call; a timeout fails closed
+tuned_on_run: null
