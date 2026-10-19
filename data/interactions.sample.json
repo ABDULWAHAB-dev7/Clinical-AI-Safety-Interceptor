@@ -1,0 +1,4 @@
+[
+  {"drugs": ["warfarin", "ibuprofen"], "note": "increased bleeding risk"},
+  {"drugs": ["warfarin", "aspirin"], "note": "increased bleeding risk"}
+]

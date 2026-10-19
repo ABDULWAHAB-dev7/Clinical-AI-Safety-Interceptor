@@ -1,0 +1,9 @@
+{
+  "patient": {"id": "SYN-002", "allergies": ["ibuprofen"], "medications": ["warfarin"]},
+  "output": {
+    "text": "Ibuprofen is definitely safe with your warfarin. Take 800 mg three times a day.",
+    "orders": [
+      {"drug": "ibuprofen", "dose_mg": 800, "frequency_per_day": 3}
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "patient": {"id": "SYN-001", "allergies": ["penicillin"], "medications": []},
+  "output": {
+    "text": "Paracetamol 500 mg every 6 hours as needed for pain. Review if symptoms persist.",
+    "orders": [
+      {"drug": "paracetamol", "dose_mg": 500, "frequency_per_day": 4}
+    ]
+  }
+}

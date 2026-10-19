@@ -1,0 +1,5 @@
+{
+  "paracetamol": {"max_single_mg": 1000, "max_daily_mg": 4000},
+  "ibuprofen": {"max_single_mg": 400, "max_daily_mg": 1200},
+  "warfarin": {"max_single_mg": 10, "max_daily_mg": 10}
+}
