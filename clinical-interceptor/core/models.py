@@ -61,6 +61,7 @@ class VerdictRecord(BaseModel):
     verifier: str  # "deterministic" | "nli" | "none"
     evidence: list[EvidenceRef] = []
     error_class: Optional[str] = None
+    confidence: Optional[float] = None  # 1.0 for deterministic matches; NLI score otherwise
 
 
 class SpanRecord(BaseModel):

@@ -14,8 +14,8 @@ Verifies a generated clinical document against the patient's FHIR record before 
 | 4. Verification matrix | `nli/deterministic.py`, `nli/model.py` | Deterministic verifiers for allergy, medication and lab. NLI is an interface only, with no model loaded. |
 | 5. Attribution spans | `core/attribution.py` | Built, with precedence merge. |
 | 6. Decision engine | `core/policy.py` | Hard-stop rules R1 to R4 in code; configurable rule C1 from the policy file. |
-| Audit | `store/audit.py` | Hash-chained JSONL, references and hashes only. PostgreSQL is not built. |
-| Fail-closed pipeline | `core/pipeline.py` | Built. Delivery requires a persisted audit record and a non-blocking decision. |
+| Audit | `store/postgres.py`, `store/records.py` | One PostgreSQL transaction per request, into the DATABASE.md schema. Records hold hashes, codes and pseudo-IDs only. |
+| Fail-closed pipeline | `core/pipeline.py` | Built. Writes one note, six stage traces (INGEST, RETRIEVE, EXTRACT, VERIFY, ATTRIBUTE, INTERCEPT) and one event per CRITICAL or WARNING claim. Delivery requires the write to succeed and a non-blocking decision. |
 
 Outcomes: `PASS_THROUGH` (delivered), `WARN` (delivered with ungrounded spans to acknowledge), `HARD_BLOCK` (not delivered, no text returned).
 
@@ -36,11 +36,17 @@ Python 3.11+ (tested on 3.12).
 
 ```bash
 pip install -r requirements.txt
-python -m unittest discover -s tests -t .          # 59 tests
+python -m unittest discover -s tests -t .          # 104 tests; database tests skip without a DSN
 uvicorn api.app:build_default_app --factory --host 127.0.0.1 --port 8000
 ```
 
-Environment variables for the default app: `INTERCEPTOR_POLICY`, `INTERCEPTOR_FHIR_DIR`, `INTERCEPTOR_AUDIT`. Defaults point at `config/policy/default.yaml`, `fixtures/fhir/` and `var/audit.jsonl`.
+Environment for the default app:
+
+- `INTERCEPTOR_DATABASE_URL` (required): PostgreSQL DSN. The schema in `db/schema.sql` must already be applied.
+- `INTERCEPTOR_PSEUDO_KEY` (required, at least 16 bytes): secret for patient and encounter pseudo-IDs. Never commit it.
+- `INTERCEPTOR_POLICY`, `INTERCEPTOR_FHIR_DIR` (optional): default to `config/policy/default.yaml` and `fixtures/fhir/`.
+
+The service refuses to start without the first two. `/readyz` returns 503 if the database is unreachable.
 
 ```bash
 curl -s -X POST http://127.0.0.1:8000/v1/verify -H "Content-Type: application/json" -d @examples/verify_clean.json
@@ -52,7 +58,7 @@ curl -s -X POST http://127.0.0.1:8000/v1/verify -H "Content-Type: application/js
 core/      domain models, errors, policy, decomposition, attribution, pipeline (no I/O imports)
 fhir/      encounter bundle loading and parsing
 nli/       deterministic verifiers (pure) and the NLI interface
-store/     append-only audit store
+store/     PostgreSQL repository and in-memory store for tests
 api/       FastAPI app and uvicorn factory
 config/    versioned policy file
 fixtures/  synthetic FHIR bundles
@@ -118,6 +124,18 @@ Without `INTERCEPTOR_TEST_DSN`, the 8 database tests are skipped.
 
 ### Not built
 
-- Writing a full request through the pipeline into PostgreSQL. `core/pipeline.py` still uses the JSONL audit log.
 - Encrypted object store for note text (`note_storage_uri` is nullable).
 - Retention jobs (6 years, assumed), access roles, and row-level security.
+
+
+## Pipeline to PostgreSQL
+
+`verify_document` builds one `RequestRecord` in memory and writes it in a single transaction (`store/postgres.py`). Decisions:
+
+- **Note row:** keyed by (patient pseudo-ID, SHA-256 of the text). Verifying the same text again updates the note and adds six more traces, so the history is kept.
+- **Stages:** each stage writes one `audit_traces` row with a hash of its input and a payload of counts and codes. A failed stage marks later stages `SKIPPED`, and INTERCEPT always runs.
+- **Events:** one per CRITICAL or WARNING claim, linked to the VERIFY trace. `claim_text` is a token such as `claim:medication:negated`, not draft text, because DATABASE.md leaves clear-text storage open.
+- **No patient, no record:** a request whose patient cannot be resolved is never delivered and writes nothing, because the note row needs a patient pseudo-ID.
+- **Audit failure:** any database error becomes `AUDIT_WRITE_FAILURE`, which blocks delivery.
+
+Known gaps in this version: rule 1 (drug-allergy conflict) needs an RxNorm lookup for drug names, which the bundle does not carry yet, so the pipeline never fires it. NLI-based verdicts also need a model, which is still not approved, so in practice every free-text claim blocks.

@@ -8,12 +8,14 @@ Resources that fail parsing are excluded and reported; absence of a resource typ
 import json
 import re
 from pathlib import Path
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
 from core.errors import ErrorClass, PipelineError
 from core.models import AssertionType
 
+MRN_SYSTEM = "urn:synthetic:mrn"  # placeholder; the real MRN system comes from facility configuration
 ENCOUNTER_RE = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 RESOURCE_ATTR = {
     "AllergyIntolerance": "allergies",
@@ -41,6 +43,7 @@ class ContextBundle(BaseModel):
     observations: list[Observation] = []
     incomplete_types: set[str] = Field(default_factory=set)
     parse_failures: list[str] = []  # resource types with at least one resource that failed parsing
+    patient_mrn: Optional[str] = None  # from the Patient resource; pseudonymized before storage
 
     def hints(self):
         """Lowercase record terms mapped to assertion types. Used only to guide typing, never to decide verdicts."""
@@ -75,6 +78,9 @@ def load_bundle(encounter_ref, fixture_dir):
         if not isinstance(resource, dict):
             continue
         rtype = resource.get("resourceType")
+        if rtype == "Patient":
+            bundle.patient_mrn = _mrn(resource)
+            continue
         if rtype not in RESOURCE_ATTR:
             continue  # unknown resource types are ignored (architecture 8.5)
         seen.add(rtype)
@@ -117,3 +123,11 @@ def _display(concept):
         if isinstance(coding, dict) and coding.get("display"):
             return str(coding["display"])
     raise ValueError("no display name")
+
+
+def _mrn(patient):
+    """MRN from the identifier whose system is MRN_SYSTEM. None if absent: the pipeline then fails closed."""
+    for identifier in patient.get("identifier", []):
+        if isinstance(identifier, dict) and identifier.get("system") == MRN_SYSTEM and identifier.get("value"):
+            return str(identifier["value"])
+    return None
