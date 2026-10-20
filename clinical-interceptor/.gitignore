@@ -6,3 +6,6 @@ seed/certs/
 # benchmark (PLAN 7.1): real MIMIC-IV data must never enter the repository
 benchmark/corpus/mimic/
 data/
+
+# NLI checkpoints (PLAN 4.1): downloaded locally, never committed. The lock file is committed separately.
+models/
