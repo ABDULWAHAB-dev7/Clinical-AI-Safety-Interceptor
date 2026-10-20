@@ -1,0 +1,64 @@
+[
+  {
+    "model": "cross-encoder/nli-deberta-v3-base",
+    "label_order": {
+      "0": "contradiction",
+      "1": "entailment",
+      "2": "neutral"
+    },
+    "parameters": 184424451,
+    "load_seconds": 214.01,
+    "threads": 8,
+    "python": "3.12.10",
+    "torch": "2.14.1+cpu",
+    "cpu": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+    "batches": {
+      "1": {
+        "p50_ms": 149.8,
+        "p95_ms": 157.7,
+        "per_pair_p50_ms": 149.8
+      },
+      "4": {
+        "p50_ms": 299.3,
+        "p95_ms": 303.6,
+        "per_pair_p50_ms": 74.8
+      },
+      "8": {
+        "p50_ms": 508.7,
+        "p95_ms": 527.4,
+        "per_pair_p50_ms": 63.6
+      }
+    }
+  },
+  {
+    "model": "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+    "label_order": {
+      "0": "entailment",
+      "1": "neutral",
+      "2": "contradiction"
+    },
+    "parameters": 184424451,
+    "load_seconds": 6.07,
+    "threads": 8,
+    "python": "3.12.10",
+    "torch": "2.14.1+cpu",
+    "cpu": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+    "batches": {
+      "1": {
+        "p50_ms": 1774.9,
+        "p95_ms": 1839.6,
+        "per_pair_p50_ms": 1774.9
+      },
+      "4": {
+        "p50_ms": 4786.1,
+        "p95_ms": 5096.0,
+        "per_pair_p50_ms": 1196.5
+      },
+      "8": {
+        "p50_ms": 8922.9,
+        "p95_ms": 9097.8,
+        "per_pair_p50_ms": 1115.4
+      }
+    }
+  }
+]
