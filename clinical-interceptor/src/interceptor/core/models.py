@@ -46,6 +46,7 @@ class Assertion(BaseModel):
     name: Optional[str] = None  # subject name, lab assertions only
     value: Optional[float] = None
     unit: Optional[str] = None
+    section: Optional[str] = None  # context tag from a section header; never part of the text
 
 
 class EvidenceRef(BaseModel):

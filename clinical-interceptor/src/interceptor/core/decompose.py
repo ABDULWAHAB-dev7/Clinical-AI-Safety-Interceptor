@@ -1,8 +1,18 @@
-"""Stage 2 (MVP stand-in): rule-based segmentation and assertion typing.
+"""Stage 2: rule-based, structure-aware decomposition of a clinical note into assertions.
 
-The architecture's Med-spaCy segmentation and LLM atomic-claim decomposition are not built: their models are
-not yet approved (architecture 10.1). This version keeps the same contract: each assertion has a type, a negation
-flag, and character offsets taken from segmentation, not from model output.
+Med-spaCy segmentation and LLM atomic-claim decomposition are not built: their models are not yet approved (architecture
+10.1). This version keeps the same contract: each assertion has a type, a negation flag and character offsets.
+
+Structure, handled per line in this order:
+  1. A section header (CHIEF COMPLAINT:, HPI:, MEDICATIONS:, ALLERGIES:, ASSESSMENT & PLAN:, ...) is a context tag. It is
+     removed from the claim text and kept on each assertion as `section`. The tag lasts until the next header.
+  2. A list marker ("- ", "* ", "• ", "1. ", "2) ") is removed. Each list item is its own unit.
+  3. Sentences end at . ! ? (a dot inside a number such as 12.1 does not end one).
+  4. Inside a sentence, semicolons and coordinate clauses (", and " / ", but ") split it into atomic spans. A split
+     needs at least two words after it, so "diabetes and hypertension" is one span.
+
+Every span's offsets come from positions in the original text, never from a rewritten copy, so text[start:end] == text
+for every assertion.
 """
 
 import re
@@ -12,16 +22,33 @@ from .models import Assertion, AssertionType
 
 LINE = re.compile(r"[^\n]+")
 HEADER = re.compile(
-    r"^[ \t]*(allergies|medications|labs|vitals|assessment|plan|hospital course)[ \t]*:[ \t]*",
+    r"[ \t]*(?P<name>chief complaint|history of present illness|hpi|past medical history|pmh|social history"
+    r"|family history|review of systems|ros|allergies|medications|meds|labs|vitals|physical exam"
+    r"|assessment\s*(?:&|and)\s*plan|assessment|plan|hospital course|impression|discharge diagnos[ie]s)"
+    r"[ \t]*:[ \t]*",
     re.IGNORECASE,
 )
+LIST_MARK = re.compile(r"[ \t]*(?:[-*•]|\d{1,2}[.)])[ \t]+")
 # A dot inside a number ("12.1") does not end a sentence.
 SENTENCE = re.compile(r"(?:[^.!?\n]|(?<=\d)\.(?=\d))+[.!?]?")
+# Semicolons always split. ", and" / ", but" split only when at least two words follow (checked in code).
+SPLIT = re.compile(r";|,[ \t]+(?:and|but)[ \t]+", re.IGNORECASE)
 NEGATION = re.compile(r"\b(no|not|denies|denied|without|negative for)\b", re.IGNORECASE)
 DOSE = re.compile(r"\b\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml|units?)\b", re.IGNORECASE)
 LAB = re.compile(
     r"^\s*(?P<name>[A-Za-z][A-Za-z ]{0,30}?)\s*:?\s*(?P<value>-?\d+(?:\.\d+)?)\s*(?P<unit>[A-Za-z%/]+)?",
 )
+SECTION_ALIASES = {"meds": "medications", "hpi": "history of present illness", "pmh": "past medical history",
+                   "ros": "review of systems"}
+
+
+def section_key(name):
+    """The context tag for a header: lower case, single spaces, with the usual abbreviations expanded."""
+    key = re.sub(r"\s*(?:&|and)\s*", " & ", re.sub(r"\s+", " ", name.strip().lower()))
+    if key == "assessment & plan":
+        return "plan"  # the plan type is what classification uses
+    key = SECTION_ALIASES.get(key, key)
+    return key.replace(" ", "_").replace("&", "and")
 
 
 def decompose(text, hints=None):
@@ -33,36 +60,65 @@ def decompose(text, hints=None):
     assertions = []
     section = None
     for line_match in LINE.finditer(text):
-        line = line_match.group(0)
-        content_start = line_match.start()
-        header = HEADER.match(line)
+        line_start, line_end = line_match.start(), line_match.end()
+        position = line_start
+        header = HEADER.match(text, position, line_end)
         if header:
-            section = header.group(1).lower()
-            content_start += header.end()
-            line = line[header.end():]
+            section = section_key(header.group("name"))
+            position = header.end()
+        marker = LIST_MARK.match(text, position, line_end)
+        if marker:
+            position = marker.end()
 
-        for sentence in SENTENCE.finditer(line):
-            raw = sentence.group(0)
-            body = raw.strip()
-            if not body:
-                continue
-            start = content_start + sentence.start() + (len(raw) - len(raw.lstrip()))
-            atype = _classify(section, body, body.lower(), hints)
-            lab = LAB.match(body) if atype == AssertionType.OBSERVATION_LAB else None
-            assertions.append(
-                Assertion(
-                    assertion_id=f"a{len(assertions) + 1}",
-                    type=atype,
-                    span_start=start,
-                    span_end=start + len(body),
-                    text=body,
-                    negated=NEGATION.search(body) is not None,
-                    name=lab.group("name").strip() if lab else None,
-                    value=float(lab.group("value")) if lab else None,
-                    unit=lab.group("unit") if lab else None,
+        for sentence in SENTENCE.finditer(text, position, line_end):
+            for start, end in _clauses(text, sentence.start(), sentence.end()):
+                body = text[start:end]
+                atype = _classify(section, body, body.lower(), hints)
+                lab = LAB.match(body) if atype == AssertionType.OBSERVATION_LAB else None
+                assertions.append(
+                    Assertion(
+                        assertion_id=f"a{len(assertions) + 1}",
+                        type=atype,
+                        span_start=start,
+                        span_end=end,
+                        text=body,
+                        negated=NEGATION.search(body) is not None,
+                        name=lab.group("name").strip() if lab else None,
+                        value=float(lab.group("value")) if lab else None,
+                        unit=lab.group("unit") if lab else None,
+                        section=section,
+                    )
                 )
-            )
     return assertions
+
+
+def _clauses(text, start, end):
+    """Atomic (start, end) spans inside one sentence, trimmed of surrounding whitespace. Offsets are absolute."""
+    cuts = []  # (cut_start, next_start)
+    for split in SPLIT.finditer(text, start, end):
+        following = text[split.end():end].split()
+        if split.group(0) == ";" and not following:
+            continue
+        if split.group(0) != ";" and len(following) < 2:
+            continue
+        cuts.append((split.start(), split.end()))
+
+    spans = []
+    piece_start = start
+    for cut_start, next_start in cuts:
+        spans.append((piece_start, cut_start))
+        piece_start = next_start
+    spans.append((piece_start, end))
+
+    trimmed = []
+    for piece_start, piece_end in spans:
+        while piece_start < piece_end and text[piece_start].isspace():
+            piece_start += 1
+        while piece_end > piece_start and text[piece_end - 1].isspace():
+            piece_end -= 1
+        if piece_end > piece_start:
+            trimmed.append((piece_start, piece_end))
+    return trimmed
 
 
 def _classify(section, body, lower, hints):

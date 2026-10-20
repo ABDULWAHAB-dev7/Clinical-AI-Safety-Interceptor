@@ -42,6 +42,61 @@ class DecomposeTests(unittest.TestCase):
             decompose(None)
         self.assertEqual(ctx.exception.error_class, ErrorClass.DECOMPOSITION_SCHEMA_INVALID)
 
+    def test_section_header_is_a_tag_not_claim_text(self):
+        text = "CHIEF COMPLAINT: Cough for three days."
+        a = decompose(text)[0]
+        self.assertEqual(a.text, "Cough for three days.")
+        self.assertEqual(a.section, "chief_complaint")
+        self.assertEqual(text[a.span_start:a.span_end], a.text)
+
+    def test_assessment_and_plan_header_sets_the_plan_tag(self):
+        a = decompose("ASSESSMENT & PLAN: Continue metformin.")[0]
+        self.assertEqual((a.section, a.type), ("plan", AssertionType.PLAN))
+        self.assertEqual(a.text, "Continue metformin.")
+
+    def test_bullets_and_numbers_are_removed_and_each_item_is_a_span(self):
+        text = "- Started lisinopril 10 mg daily\n- Patient denies cough\n1. Labs reviewed.\n2) HbA1c 8.2% on 2026-09-02."
+        spans = decompose(text)
+        self.assertEqual([a.text for a in spans], ["Started lisinopril 10 mg daily", "Patient denies cough",
+                                                   "Labs reviewed.", "HbA1c 8.2% on 2026-09-02."])
+        for a in spans:
+            self.assertEqual(text[a.span_start:a.span_end], a.text)
+
+    def test_semicolon_splits_a_sentence(self):
+        text = "Denies fever; started lisinopril 10 mg daily."
+        spans = decompose(text)
+        self.assertEqual([a.text for a in spans], ["Denies fever", "started lisinopril 10 mg daily."])
+        self.assertEqual([a.type for a in spans], [AssertionType.NEGATED_FINDING, AssertionType.MEDICATION])
+
+    def test_coordinate_clause_splits_into_two_atomic_spans(self):
+        text = "Started lisinopril 10mg daily, and patient denies cough."
+        spans = decompose(text)
+        self.assertEqual([a.text for a in spans], ["Started lisinopril 10mg daily", "patient denies cough."])
+        self.assertTrue(spans[1].negated)
+        for a in spans:
+            self.assertEqual(text[a.span_start:a.span_end], a.text)
+
+    def test_noun_coordination_is_not_split(self):
+        self.assertEqual(len(decompose("Patient has diabetes and hypertension.")), 1)
+
+    def test_coordinate_split_needs_a_clause_after_it(self):
+        self.assertEqual(len(decompose("Denies pain, and fever.")), 1)
+
+    def test_offsets_round_trip_on_a_messy_note(self):
+        text = (
+            "CHIEF COMPLAINT: Follow-up; HPI: 62 y/o with T2DM, seen today.\n"
+            "ALLERGIES: penicillin (rash).\n"
+            "- Metformin 500 mg BID, and lisinopril 10 mg daily.\n"
+            "2. Patient denies chest pain; no fever.\n\n"
+            "ASSESSMENT & PLAN: Labs: Hgb 12.1 g/dL."
+        )
+        spans = decompose(text)
+        self.assertGreater(len(spans), 5)
+        self.assertEqual(len({a.assertion_id for a in spans}), len(spans))
+        for a in spans:
+            self.assertEqual(text[a.span_start:a.span_end], a.text)
+            self.assertTrue(a.text.strip())
+
 
 if __name__ == "__main__":
     unittest.main()
