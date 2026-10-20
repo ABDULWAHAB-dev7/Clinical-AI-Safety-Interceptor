@@ -1,5 +1,5 @@
 {
-  "document_text": "Allergies: penicillin.\nMedications: metformin 500 mg twice daily.\nLabs: Hgb 12.1 g/dL.",
+  "document_text": "Patient has drug allergies. HbA1c was 8.2% on 2026-09-02. Patient has type 2 diabetes.",
   "doc_type": "soap_note",
   "encounter_ref": "ENC-SYN-1"
 }

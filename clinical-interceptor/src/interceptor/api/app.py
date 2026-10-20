@@ -29,14 +29,15 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from interceptor.core.knowledge import load_knowledge
-from interceptor.core.pipeline import MAX_DOCUMENT_CHARS, verify_document
+from interceptor.core.pipeline import MAX_DOCUMENT_CHARS
 from interceptor.core.policy import load_policy
 from interceptor.intercept.upstream import UpstreamClient
 from interceptor.paths import PROJECT_ROOT
 
 from .auth import DenyAllVerifier, JwtVerifier, require_scope
+from .document import check_document
+from .engine import VERIFIER_VERSION
 from .errors import InterceptionError, envelope, register_error_handlers
-from .interceptor import VERIFIER_VERSION
 from .interceptor import router as interceptor_router
 from .mtls import MtlsConfig
 from .proxy import router as proxy_router
@@ -136,18 +137,14 @@ def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_m
             raise InterceptionError("AUTH_SCOPE_INSUFFICIENT", "This endpoint needs a client with access to all patients.")
         if body.doc_type not in policy.doc_types_in_scope:
             raise HTTPException(status_code=400, detail="document type is not in facility scope")
-        result = verify_document(
-            body.document_text,
-            body.doc_type,
-            body.encounter_ref,
-            policy=policy,
-            fhir_dir=fhir_dir,
-            store=store,
-            pseudo_key=app.state.pseudo_key,
-            nli_model=nli_model,
+        return check_document(
+            app.state,
+            document_text=body.document_text,
+            doc_type=body.doc_type,
+            encounter_ref=body.encounter_ref,
             source_system=body.source_system,
+            policy=policy,
         )
-        return _render(result)
 
     return app
 
@@ -155,22 +152,6 @@ def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_m
 def _request_id(request):
     supplied = request.headers.get("x-request-id", "")
     return supplied if UUID_RE.match(supplied) else str(uuid.uuid4())
-
-
-def _render(result):
-    payload = {
-        "request_id": result.request_id,
-        "outcome": result.outcome.value,
-        "delivered": result.delivered,
-        "pipeline_status": result.pipeline_status,
-        "policy_version": result.decision.policy_version,
-        "rules_fired": result.decision.rules_fired,
-        "errors": result.errors,
-        "verdicts": [r.model_dump(mode="json") for r in result.records],
-    }
-    if result.delivered:  # blocked documents return no text (architecture 6.2)
-        payload["spans"] = [s.model_dump(mode="json") for s in result.spans]
-    return payload
 
 
 def _load_verifier():

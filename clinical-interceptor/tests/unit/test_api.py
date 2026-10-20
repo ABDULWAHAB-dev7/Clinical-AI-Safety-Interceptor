@@ -3,8 +3,6 @@
 Error responses use the API.md envelope; validation failures are 400 VALIDATION_FAILED.
 """
 
-import dataclasses
-import json
 import unittest
 
 from fastapi.testclient import TestClient
@@ -58,7 +56,7 @@ class LegacyVerifyTests(unittest.TestCase):
         self.assertEqual(body["pipeline_status"], "VERIFIED")
         self.assertTrue(body["delivered"])
         self.assertEqual(len(body["spans"]), 3)
-        self.assertTrue(all(s["verdict"] == "SUPPORTED" for s in body["spans"]))
+        self.assertTrue(all(s["classification"] == "SOURCE_SUPPORTED" for s in body["spans"]))
 
     def test_contradicted_document_is_not_delivered_and_has_no_text(self):
         body = self.post(load_example("verify_contradicted.json")).json()
@@ -66,7 +64,7 @@ class LegacyVerifyTests(unittest.TestCase):
         self.assertEqual(body["pipeline_status"], "BLOCKED")
         self.assertFalse(body["delivered"])
         self.assertNotIn("spans", body)
-        self.assertIn("R3_contradiction", body["rules_fired"])
+        self.assertIn("drug_allergy_conflict", body["rules_fired"])
 
     def test_out_of_scope_document_type_is_refused(self):
         r = self.post(load_example("verify_clean.json") | {"doc_type": "dental_note"})
@@ -90,9 +88,9 @@ class LegacyVerifyTests(unittest.TestCase):
     def test_every_request_is_recorded_and_holds_no_document_text(self):
         self.post(load_example("verify_clean.json"))
         self.post(load_example("verify_contradicted.json"))
-        self.assertEqual(len(self.store.requests), 2)
-        serialized = json.dumps([dataclasses.asdict(r) for r in self.store.requests], default=str)
-        for fragment in ("metformin", "twice daily", "Hgb 12.1", "Allergies:", "not on metformin"):
+        self.assertEqual(len(self.store.notes), 2)
+        serialized = repr([list(self.store.notes.values()), self.store.traces, self.store.events])
+        for fragment in ("drugs allergies", "HbA1c was 8.2", "type 2 diabetes", "Started amoxicillin", "denies known"):
             self.assertNotIn(fragment, serialized)
 
 

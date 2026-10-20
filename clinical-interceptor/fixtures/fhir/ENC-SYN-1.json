@@ -1,10 +1,160 @@
 {
   "resourceType": "Bundle",
-  "type": "searchset",
+  "type": "collection",
   "entry": [
-    {"resource": {"resourceType": "Patient", "id": "pat-0001", "identifier": [{"system": "urn:synthetic:mrn", "value": "SYNTH-MRN-0001", "use": "usual"}]}},
-    {"resource": {"resourceType": "AllergyIntolerance", "id": "al-1", "code": {"text": "penicillin"}}},
-    {"resource": {"resourceType": "MedicationRequest", "id": "mr-1", "medicationCodeableConcept": {"text": "metformin"}}},
-    {"resource": {"resourceType": "Observation", "id": "obs-1", "code": {"text": "Hgb"}, "valueQuantity": {"value": 12.1, "unit": "g/dL"}}}
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "pat-0001",
+        "identifier": [
+          {
+            "system": "urn:synthetic:mrn",
+            "value": "SYNTH-MRN-0001",
+            "use": "usual"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "family": "Synthetic",
+            "given": [
+              "Patient"
+            ],
+            "use": "official"
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1968-03-14"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "AllergyIntolerance",
+        "id": "allergy-penicillin-001",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "type": "allergy",
+        "category": [
+          "medication"
+        ],
+        "criticality": "high",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "91936005",
+              "display": "Allergy to penicillin"
+            }
+          ]
+        },
+        "patient": {
+          "reference": "Patient/pat-0001"
+        },
+        "reaction": [
+          {
+            "manifestation": [
+              {
+                "coding": [
+                  {
+                    "system": "http://snomed.info/sct",
+                    "code": "271807003",
+                    "display": "Eruption of skin"
+                  }
+                ]
+              }
+            ],
+            "severity": "moderate"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-t2dm-001",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "44054006",
+              "display": "Diabetes mellitus type 2"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "Patient/pat-0001"
+        },
+        "onsetDateTime": "2019-05-02T00:00:00Z"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-hba1c-001",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "4548-4",
+              "display": "Hemoglobin A1c/Hemoglobin.total in Blood"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "Patient/pat-0001"
+        },
+        "encounter": {
+          "reference": "Encounter/enc-0001"
+        },
+        "effectiveDateTime": "2026-09-02T08:30:00Z",
+        "valueQuantity": {
+          "value": 8.2,
+          "unit": "%",
+          "system": "http://unitsofmeasure.org",
+          "code": "%"
+        }
+      }
+    }
   ]
 }

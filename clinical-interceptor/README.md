@@ -8,14 +8,14 @@ Verifies a generated clinical document against the patient's FHIR record before 
 
 | Stage (architecture 3) | Module | Status |
 |---|---|---|
-| 1. Ingestion (`/v1/verify`, size cap, scope check, request validation) | `api/app.py` | Built. See the API section for every endpoint, including the proxy. |
+| 1. Ingestion (`/v1/verify`, size cap, scope check, request validation) | `api/app.py`, `api/document.py` | Built. `/v1/verify` runs the same engine as the `/v1/interceptor` endpoints (`api/engine.py`). |
 | 2. Decomposition | `core/decompose.py` | Rule-based stand-in: sentence segmentation, section headers, negation, typing. The LLM decomposer and Med-spaCy are not built. |
 | 3. Ground-truth retrieval | `fhir/bundle.py` | Reads a local FHIR Bundle fixture. The SMART-authenticated client is not built. |
-| 4. Verification matrix | `nli/deterministic.py`, `nli/model.py` | Deterministic verifiers for allergy, medication and lab. NLI is an interface only, with no model loaded. |
+| 4. Verification matrix | `core/verify.py`, `nli/scorer.py` | Triple-based verifier for allergy, condition, lab and medication claims. The NLI scorer loads the approved checkpoint (see `models/nli/MODEL.lock`). |
 | 5. Attribution spans | `core/attribution.py` | Built, with precedence merge. |
 | 6. Decision engine | `core/policy.py` | Hard-stop rules R1 to R4 in code; configurable rule C1 from the policy file. |
 | Audit | `store/postgres.py`, `store/records.py` | One PostgreSQL transaction per request, into the DATABASE.md schema. Records hold hashes, codes and pseudo-IDs only. |
-| Fail-closed pipeline | `core/pipeline.py` | Built. Writes one note, six stage traces (INGEST, RETRIEVE, EXTRACT, VERIFY, ATTRIBUTE, INTERCEPT) and one event per CRITICAL or WARNING claim. Delivery requires the write to succeed and a non-blocking decision. |
+| Fail-closed pipeline | `api/engine.py` | Built. One note row, then EXTRACT, VERIFY and ATTRIBUTE traces, and one event per CRITICAL or WARNING claim. Delivery requires the write to succeed and a non-blocking decision. |
 
 Outcomes: `PASS_THROUGH` (delivered), `WARN` (delivered with ungrounded spans to acknowledge), `HARD_BLOCK` (not delivered, no text returned).
 
@@ -49,7 +49,7 @@ and the key, and refuses every clinical request until the registry and the token
 src/interceptor/
   core/      domain models, errors, policy, decomposition, attribution, pipeline (no I/O imports)
   fhir/      encounter bundle loading and parsing
-  nli/       deterministic verifiers (pure), the NLI interface and the model loader
+  nli/       the NLI scorer (loads the approved local checkpoint, checks its lock)
   store/     PostgreSQL repository and in-memory store for tests
   api/       FastAPI app, auth, endpoints and uvicorn factory
   intercept/ proxy release policy, analysis, upstream client, streaming
@@ -127,15 +127,15 @@ Without `INTERCEPTOR_TEST_DSN`, the 8 database tests are skipped.
 
 ## Pipeline to PostgreSQL
 
-`verify_document` builds one `RequestRecord` in memory and writes it in a single transaction (`store/postgres.py`). Decisions:
+`/v1/verify` and the `/v1/interceptor` endpoints share `api/engine.py`. A document is written as one note row, then its traces, in the audit store (`store/postgres.py`). Decisions:
 
-- **Note row:** keyed by (patient pseudo-ID, SHA-256 of the text). Verifying the same text again updates the note and adds six more traces, so the history is kept.
+- **Note row:** keyed by (patient pseudo-ID, SHA-256 of the text). Verifying the same text again reuses the note and adds its VERIFY and ATTRIBUTE traces, so the history is kept.
 - **Stages:** each stage writes one `audit_traces` row with a hash of its input and a payload of counts and codes. A failed stage marks later stages `SKIPPED`, and INTERCEPT always runs.
-- **Events:** one per CRITICAL or WARNING claim, linked to the VERIFY trace. `claim_text` is a token such as `claim:medication:negated`, not draft text, because DATABASE.md leaves clear-text storage open.
+- **Events:** one per CRITICAL or WARNING claim, linked to the report (ATTRIBUTE) trace. `claim_text` is a token such as `claim:medication:negated`, not draft text, because DATABASE.md leaves clear-text storage open.
 - **No patient, no record:** a request whose patient cannot be resolved is never delivered and writes nothing, because the note row needs a patient pseudo-ID.
 - **Audit failure:** any database error becomes `AUDIT_WRITE_FAILURE`, which blocks delivery.
 
-Known gaps in this version: this document-level pipeline (`core/pipeline.py`) still uses the older name-matching verifier, so it never fires rule 1. The newer triple-based verifier (see "Verification core") is used by `/v1/interceptor/verify`. NLI-based verdicts need a model, which is still not approved, so free-text claims that need it block.
+The older name-matching document pipeline has been retired. `/v1/verify` now gives the same verdicts as the three-call flow, and it fails closed on the same errors. Claims that need the NLI model block until the server is started with `INTERCEPTOR_NLI_MODEL_PATH` and its lock.
 
 ## API (API.md v1.0.0)
 
@@ -149,7 +149,7 @@ Every endpoint in API.md is built, except where an open decision is listed below
 | Verify | `POST /v1/interceptor/verify` | Built |
 | Audit | `POST /v1/interceptor/audit` (201, 200 replay, 409, 422, 503) | Built |
 | Reads | `GET /v1/interceptor/notes/{id}`, `GET /v1/interceptor/audit/reports/{id}` | Built |
-| Legacy | `POST /v1/verify` (full document pipeline) | Kept, behind the same auth |
+| Document check | `POST /v1/verify` (one call: decompose, verify, audit, on the shared engine; described in ARCHITECTURE 6.2, not in API.md) | Built, behind the same auth |
 | Errors | Envelope from 11.1, the codes in use from 11.2 | Built |
 | Headers | `X-Request-Id`, `X-Interceptor-Version`, `X-Interception-Time-MS`, `X-Interception-Status`, `X-Trace-Id`, `X-Upstream-Time-MS`, `RateLimit-*`, `Retry-After` | Built |
 | Limits | 2 MiB body, note and bundle limits, 100 messages, JSON content type, 60 requests per minute per client | Built |
