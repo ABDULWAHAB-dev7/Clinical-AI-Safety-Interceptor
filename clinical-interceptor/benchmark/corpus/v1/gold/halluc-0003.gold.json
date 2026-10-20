@@ -1,0 +1,25 @@
+{
+  "note_id": "halluc-0003",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "D",
+  "patient_ref": "Patient/pat-d",
+  "note_sha256": "b560eef218cb0e5467a71ac2f35ae40ef81a1f2fe36ace00e796e2bf08a04e15",
+  "char_length": 29,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 28,
+      "surface_text": "HbA1c was 6.1% on 2026-09-02",
+      "claim_text": "HbA1c was 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0003-p01"
+    }
+  ]
+}

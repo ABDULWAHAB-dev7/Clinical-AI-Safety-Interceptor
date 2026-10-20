@@ -1,0 +1,25 @@
+{
+  "note_id": "halluc-0160",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "56af3afd2dd32a97ef0adb44fc480167ac4622eb35745581a73029037b0f5ca5",
+  "char_length": 24,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 23,
+      "surface_text": "No known drug allergies",
+      "claim_text": "No known drug allergies",
+      "kind": "allergy_denial",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0160-p01"
+    }
+  ]
+}

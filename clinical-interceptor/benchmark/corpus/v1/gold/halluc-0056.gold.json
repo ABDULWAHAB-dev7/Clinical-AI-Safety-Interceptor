@@ -1,0 +1,53 @@
+{
+  "note_id": "halluc-0056",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "D",
+  "patient_ref": "Patient/pat-d",
+  "note_sha256": "b40d84473f33460a0bd73d8dea362499ff11266966e67e2d3b840bed982202c7",
+  "char_length": 101,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 42,
+      "surface_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0056-p01"
+    },
+    {
+      "char_start": 44,
+      "char_end": 76,
+      "surface_text": "Started amoxicillin 1500 mg once",
+      "claim_text": "Started amoxicillin 1500 mg once",
+      "kind": "dose_above_limit",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": null,
+      "expected_category": "MEDICATION_DOSE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0056-p02"
+    },
+    {
+      "char_start": 78,
+      "char_end": 100,
+      "surface_text": "Patient reports nausea",
+      "claim_text": "Patient reports nausea",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0056-p03"
+    }
+  ]
+}

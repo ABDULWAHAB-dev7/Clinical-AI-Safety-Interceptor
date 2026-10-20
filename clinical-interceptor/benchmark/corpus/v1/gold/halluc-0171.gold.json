@@ -1,0 +1,39 @@
+{
+  "note_id": "halluc-0171",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "28a889f0dabffec1ee89840bf04e79ddb02a3689b8f0150f36fbc78968924720",
+  "char_length": 60,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 28,
+      "surface_text": "HbA1c was 8.2% on 2026-09-02",
+      "claim_text": "HbA1c was 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0171-p01"
+    },
+    {
+      "char_start": 30,
+      "char_end": 59,
+      "surface_text": "No history of type 2 diabetes",
+      "claim_text": "No history of type 2 diabetes",
+      "kind": "diagnosis_contradiction",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": "DIAGNOSIS_CONTRADICTION",
+      "is_clinical": true,
+      "gold_id": "halluc-0171-p02"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "note_id": "halluc-0189",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "D",
+  "patient_ref": "Patient/pat-d",
+  "note_sha256": "9a2d63296a91ef65381e6e2e8b9d31470cb060f7293115f6e65c9de5b8f62ad5",
+  "char_length": 119,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 34,
+      "surface_text": "Amoxicillin 1500 mg was given once",
+      "claim_text": "Amoxicillin 1500 mg was given once",
+      "kind": "dose_above_limit",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": null,
+      "expected_category": "MEDICATION_DOSE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0189-p01"
+    },
+    {
+      "char_start": 36,
+      "char_end": 64,
+      "surface_text": "HbA1c was 6.1% on 2026-09-02",
+      "claim_text": "HbA1c was 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0189-p02"
+    },
+    {
+      "char_start": 66,
+      "char_end": 94,
+      "surface_text": "HbA1c was 8.2% on 2026-09-02",
+      "claim_text": "HbA1c was 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0189-p03"
+    },
+    {
+      "char_start": 96,
+      "char_end": 118,
+      "surface_text": "Patient reports nausea",
+      "claim_text": "Patient reports nausea",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0189-p04"
+    }
+  ]
+}

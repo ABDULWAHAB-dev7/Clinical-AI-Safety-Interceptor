@@ -1,0 +1,67 @@
+{
+  "note_id": "halluc-0052",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "564a4fe2814f8f70ca97ce76ba023dffa7b2a3c776d6bbde69bae86f44759110",
+  "char_length": 137,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 42,
+      "surface_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0052-p01"
+    },
+    {
+      "char_start": 44,
+      "char_end": 71,
+      "surface_text": "Patient has type 2 diabetes",
+      "claim_text": "Patient has type 2 diabetes",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0052-p02"
+    },
+    {
+      "char_start": 73,
+      "char_end": 102,
+      "surface_text": "No history of type 2 diabetes",
+      "claim_text": "No history of type 2 diabetes",
+      "kind": "diagnosis_contradiction",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": "DIAGNOSIS_CONTRADICTION",
+      "is_clinical": true,
+      "gold_id": "halluc-0052-p03"
+    },
+    {
+      "char_start": 104,
+      "char_end": 136,
+      "surface_text": "Started amoxicillin 1500 mg once",
+      "claim_text": "Started amoxicillin 1500 mg once",
+      "kind": "dose_above_limit",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": null,
+      "expected_category": "MEDICATION_DOSE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0052-p04"
+    }
+  ]
+}

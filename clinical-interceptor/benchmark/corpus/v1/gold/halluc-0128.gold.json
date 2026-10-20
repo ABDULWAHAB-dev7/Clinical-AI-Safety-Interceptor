@@ -1,0 +1,81 @@
+{
+  "note_id": "halluc-0128",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "1ab9332c515f6fe460e1e4a686a2bfe74257b88f15b91499829f3954c497d0dd",
+  "char_length": 180,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 51,
+      "surface_text": "Amoxicillin 500 mg three times daily was prescribed",
+      "claim_text": "Amoxicillin 500 mg three times daily was prescribed",
+      "kind": "drug_allergy_order",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "drug_allergy_conflict",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0128-p01"
+    },
+    {
+      "char_start": 53,
+      "char_end": 76,
+      "surface_text": "No known drug allergies",
+      "claim_text": "No known drug allergies",
+      "kind": "allergy_denial",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0128-p02"
+    },
+    {
+      "char_start": 78,
+      "char_end": 106,
+      "surface_text": "HbA1c was 8.2% on 2026-09-02",
+      "claim_text": "HbA1c was 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0128-p03"
+    },
+    {
+      "char_start": 108,
+      "char_end": 135,
+      "surface_text": "Patient has type 2 diabetes",
+      "claim_text": "Patient has type 2 diabetes",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0128-p04"
+    },
+    {
+      "char_start": 137,
+      "char_end": 179,
+      "surface_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0128-p05"
+    }
+  ]
+}

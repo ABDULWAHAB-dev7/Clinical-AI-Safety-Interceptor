@@ -1,0 +1,39 @@
+{
+  "note_id": "halluc-0150",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "C",
+  "patient_ref": "Patient/pat-c",
+  "note_sha256": "770e6ec6a1d0a5d4f6c2bfcc5e7f3f3d898a4b8a04a1bc230cb7d1ecb55ae069",
+  "char_length": 72,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 25,
+      "surface_text": "Patient reports headaches",
+      "claim_text": "Patient reports headaches",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0150-p01"
+    },
+    {
+      "char_start": 27,
+      "char_end": 71,
+      "surface_text": "Started amoxicillin 500 mg TID for sinusitis",
+      "claim_text": "Started amoxicillin 500 mg TID for sinusitis",
+      "kind": "drug_allergy_order",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "drug_allergy_conflict",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0150-p02"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "note_id": "halluc-0057",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "C",
+  "patient_ref": "Patient/pat-c",
+  "note_sha256": "14270362c675d2e1be6fde0d5739a4ebc30812f982a927648bad14300396065f",
+  "char_length": 150,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 23,
+      "surface_text": "No known drug allergies",
+      "claim_text": "No known drug allergies",
+      "kind": "allergy_denial",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0057-p01"
+    },
+    {
+      "char_start": 25,
+      "char_end": 47,
+      "surface_text": "Patient reports nausea",
+      "claim_text": "Patient reports nausea",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0057-p02"
+    },
+    {
+      "char_start": 49,
+      "char_end": 75,
+      "surface_text": "Patient has drug allergies",
+      "claim_text": "Patient has drug allergies",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0057-p03"
+    },
+    {
+      "char_start": 77,
+      "char_end": 119,
+      "surface_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0057-p04"
+    },
+    {
+      "char_start": 121,
+      "char_end": 149,
+      "surface_text": "HbA1c was 8.2% on 2026-09-02",
+      "claim_text": "HbA1c was 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0057-p05"
+    }
+  ]
+}

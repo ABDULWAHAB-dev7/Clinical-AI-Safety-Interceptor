@@ -1,0 +1,2 @@
+Patient has type 2 diabetes.
+Known drug allergies are documented.

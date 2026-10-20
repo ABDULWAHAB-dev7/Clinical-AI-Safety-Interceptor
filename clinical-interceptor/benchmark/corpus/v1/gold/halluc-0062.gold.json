@@ -1,0 +1,81 @@
+{
+  "note_id": "halluc-0062",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "C",
+  "patient_ref": "Patient/pat-c",
+  "note_sha256": "0dc385cabe1cd5d1827b0df740b5059cf31e324d286e18610830764f66625c14",
+  "char_length": 160,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 44,
+      "surface_text": "Started amoxicillin 500 mg TID for sinusitis",
+      "claim_text": "Started amoxicillin 500 mg TID for sinusitis",
+      "kind": "drug_allergy_order",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "drug_allergy_conflict",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0062-p01"
+    },
+    {
+      "char_start": 46,
+      "char_end": 74,
+      "surface_text": "HbA1c was 6.1% on 2026-09-02",
+      "claim_text": "HbA1c was 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0062-p02"
+    },
+    {
+      "char_start": 76,
+      "char_end": 104,
+      "surface_text": "HbA1c was 8.2% on 2026-09-02",
+      "claim_text": "HbA1c was 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0062-p03"
+    },
+    {
+      "char_start": 106,
+      "char_end": 131,
+      "surface_text": "Patient reports headaches",
+      "claim_text": "Patient reports headaches",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0062-p04"
+    },
+    {
+      "char_start": 133,
+      "char_end": 159,
+      "surface_text": "Patient has drug allergies",
+      "claim_text": "Patient has drug allergies",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0062-p05"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "note_id": "halluc-0072",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "8f3a469ca9398bf89e73658257bbe2bff7628721d21d27b6d264ef60212994a2",
+  "char_length": 194,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 26,
+      "surface_text": "Patient has drug allergies",
+      "claim_text": "Patient has drug allergies",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0072-p01"
+    },
+    {
+      "char_start": 28,
+      "char_end": 68,
+      "surface_text": "History of type 2 diabetes is documented",
+      "claim_text": "History of type 2 diabetes is documented",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0072-p02"
+    },
+    {
+      "char_start": 70,
+      "char_end": 112,
+      "surface_text": "Hemoglobin A1c measured 8.2% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0072-p03"
+    },
+    {
+      "char_start": 114,
+      "char_end": 149,
+      "surface_text": "Patient denies known drug allergies",
+      "claim_text": "Patient denies known drug allergies",
+      "kind": "allergy_denial",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0072-p04"
+    },
+    {
+      "char_start": 151,
+      "char_end": 193,
+      "surface_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0072-p05"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "note_id": "halluc-0143",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "D",
+  "patient_ref": "Patient/pat-d",
+  "note_sha256": "5bf212dbe0c9bea131ad8db5b7fdc9bc8862e042837b14f0d7b137f641d588be",
+  "char_length": 90,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 32,
+      "surface_text": "Started amoxicillin 1500 mg once",
+      "claim_text": "Started amoxicillin 1500 mg once",
+      "kind": "dose_above_limit",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": null,
+      "expected_category": "MEDICATION_DOSE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0143-p01"
+    },
+    {
+      "char_start": 34,
+      "char_end": 62,
+      "surface_text": "HbA1c was 6.1% on 2026-09-02",
+      "claim_text": "HbA1c was 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0143-p02"
+    },
+    {
+      "char_start": 64,
+      "char_end": 89,
+      "surface_text": "Patient reports headaches",
+      "claim_text": "Patient reports headaches",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0143-p03"
+    }
+  ]
+}

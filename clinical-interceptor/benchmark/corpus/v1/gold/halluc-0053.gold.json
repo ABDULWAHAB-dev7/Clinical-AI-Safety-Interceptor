@@ -1,0 +1,67 @@
+{
+  "note_id": "halluc-0053",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "bd7cb64cdc0f887a7fe10a672ef853730283c3290a818156ec5aa986a688dae8",
+  "char_length": 130,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 27,
+      "surface_text": "Patient has type 2 diabetes",
+      "claim_text": "Patient has type 2 diabetes",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0053-p01"
+    },
+    {
+      "char_start": 29,
+      "char_end": 71,
+      "surface_text": "Hemoglobin A1c measured 8.2% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0053-p02"
+    },
+    {
+      "char_start": 73,
+      "char_end": 95,
+      "surface_text": "Patient reports nausea",
+      "claim_text": "Patient reports nausea",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0053-p03"
+    },
+    {
+      "char_start": 97,
+      "char_end": 129,
+      "surface_text": "Started amoxicillin 1500 mg once",
+      "claim_text": "Started amoxicillin 1500 mg once",
+      "kind": "dose_above_limit",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": null,
+      "expected_category": "MEDICATION_DOSE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0053-p04"
+    }
+  ]
+}

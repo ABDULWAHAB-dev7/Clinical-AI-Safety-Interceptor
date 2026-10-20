@@ -1,0 +1,53 @@
+{
+  "note_id": "halluc-0080",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "d552be6e1b703462139552f6ea452a7c7acfbc889f9de7d1aa98a52531cb28b2",
+  "char_length": 101,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 42,
+      "surface_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0080-p01"
+    },
+    {
+      "char_start": 44,
+      "char_end": 73,
+      "surface_text": "No history of type 2 diabetes",
+      "claim_text": "No history of type 2 diabetes",
+      "kind": "diagnosis_contradiction",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": "DIAGNOSIS_CONTRADICTION",
+      "is_clinical": true,
+      "gold_id": "halluc-0080-p02"
+    },
+    {
+      "char_start": 75,
+      "char_end": 100,
+      "surface_text": "Patient reports headaches",
+      "claim_text": "Patient reports headaches",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0080-p03"
+    }
+  ]
+}

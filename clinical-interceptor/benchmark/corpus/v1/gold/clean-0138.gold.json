@@ -1,0 +1,53 @@
+{
+  "note_id": "clean-0138",
+  "split": "test",
+  "label": "clean",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "2c46ab33df257448e91155025ee3ae92f4bed323e24b5ccd50525f222e7a1c15",
+  "char_length": 86,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 28,
+      "surface_text": "HbA1c was 8.2% on 2026-09-02",
+      "claim_text": "HbA1c was 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "clean-0138-p01"
+    },
+    {
+      "char_start": 30,
+      "char_end": 57,
+      "surface_text": "Patient has type 2 diabetes",
+      "claim_text": "Patient has type 2 diabetes",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "clean-0138-p02"
+    },
+    {
+      "char_start": 59,
+      "char_end": 85,
+      "surface_text": "Patient has drug allergies",
+      "claim_text": "Patient has drug allergies",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "clean-0138-p03"
+    }
+  ]
+}

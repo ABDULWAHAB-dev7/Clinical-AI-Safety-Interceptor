@@ -1,0 +1,39 @@
+{
+  "note_id": "halluc-0027",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "d426378a3c0e8dfd27df4956420592e97b0cfd9bff414e0cccdaff3dc859df4e",
+  "char_length": 67,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 35,
+      "surface_text": "Patient denies known drug allergies",
+      "claim_text": "Patient denies known drug allergies",
+      "kind": "allergy_denial",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0027-p01"
+    },
+    {
+      "char_start": 37,
+      "char_end": 66,
+      "surface_text": "No history of type 2 diabetes",
+      "claim_text": "No history of type 2 diabetes",
+      "kind": "diagnosis_contradiction",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": "DIAGNOSIS_CONTRADICTION",
+      "is_clinical": true,
+      "gold_id": "halluc-0027-p02"
+    }
+  ]
+}

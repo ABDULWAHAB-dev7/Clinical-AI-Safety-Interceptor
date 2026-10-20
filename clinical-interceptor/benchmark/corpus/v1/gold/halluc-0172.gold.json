@@ -1,0 +1,53 @@
+{
+  "note_id": "halluc-0172",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "D",
+  "patient_ref": "Patient/pat-d",
+  "note_sha256": "a2629ecbeb7b41e034773e7da8d608937b9d296ec5db18128bc113975fac70ba",
+  "char_length": 90,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 25,
+      "surface_text": "Patient reports headaches",
+      "claim_text": "Patient reports headaches",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0172-p01"
+    },
+    {
+      "char_start": 27,
+      "char_end": 59,
+      "surface_text": "Started amoxicillin 1500 mg once",
+      "claim_text": "Started amoxicillin 1500 mg once",
+      "kind": "dose_above_limit",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": null,
+      "expected_category": "MEDICATION_DOSE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0172-p02"
+    },
+    {
+      "char_start": 61,
+      "char_end": 89,
+      "surface_text": "HbA1c was 6.1% on 2026-09-02",
+      "claim_text": "HbA1c was 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0172-p03"
+    }
+  ]
+}

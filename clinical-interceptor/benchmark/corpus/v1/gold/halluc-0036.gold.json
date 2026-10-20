@@ -1,0 +1,53 @@
+{
+  "note_id": "halluc-0036",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "5adb037430b7b32f7236f67d30c1284f1bc39861e6c82492fb80da4f6b9097ad",
+  "char_length": 87,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 25,
+      "surface_text": "Patient reports headaches",
+      "claim_text": "Patient reports headaches",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0036-p01"
+    },
+    {
+      "char_start": 27,
+      "char_end": 56,
+      "surface_text": "No history of type 2 diabetes",
+      "claim_text": "No history of type 2 diabetes",
+      "kind": "diagnosis_contradiction",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": "DIAGNOSIS_CONTRADICTION",
+      "is_clinical": true,
+      "gold_id": "halluc-0036-p02"
+    },
+    {
+      "char_start": 58,
+      "char_end": 86,
+      "surface_text": "HbA1c was 6.1% on 2026-09-02",
+      "claim_text": "HbA1c was 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0036-p03"
+    }
+  ]
+}

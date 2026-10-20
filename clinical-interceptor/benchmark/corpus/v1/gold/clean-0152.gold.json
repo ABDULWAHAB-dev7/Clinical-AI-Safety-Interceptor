@@ -1,0 +1,25 @@
+{
+  "note_id": "clean-0152",
+  "split": "test",
+  "label": "clean",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "886fa2ecd18fe734ab763505b2ad3af6fc233be9938abb872390aea859f1a3b5",
+  "char_length": 36,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 35,
+      "surface_text": "Known drug allergies are documented",
+      "claim_text": "Known drug allergies are documented",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "clean-0152-p01"
+    }
+  ]
+}

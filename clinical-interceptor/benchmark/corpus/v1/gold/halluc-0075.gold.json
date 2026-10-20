@@ -1,0 +1,53 @@
+{
+  "note_id": "halluc-0075",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "C",
+  "patient_ref": "Patient/pat-c",
+  "note_sha256": "d176048ad44f2af7cb9a553a6edac655330a379d6c85a074838d172d737641d3",
+  "char_length": 87,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 28,
+      "surface_text": "HbA1c was 6.1% on 2026-09-02",
+      "claim_text": "HbA1c was 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0075-p01"
+    },
+    {
+      "char_start": 30,
+      "char_end": 56,
+      "surface_text": "Patient has drug allergies",
+      "claim_text": "Patient has drug allergies",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0075-p02"
+    },
+    {
+      "char_start": 58,
+      "char_end": 86,
+      "surface_text": "HbA1c was 8.2% on 2026-09-02",
+      "claim_text": "HbA1c was 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0075-p03"
+    }
+  ]
+}

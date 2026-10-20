@@ -1,0 +1,53 @@
+{
+  "note_id": "halluc-0129",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "13e618396bc597286eb67d2f8e9ea42f76fd196290c61c4d210b2afdab8fad5c",
+  "char_length": 111,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 34,
+      "surface_text": "Amoxicillin 1500 mg was given once",
+      "claim_text": "Amoxicillin 1500 mg was given once",
+      "kind": "dose_above_limit",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": null,
+      "expected_category": "MEDICATION_DOSE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0129-p01"
+    },
+    {
+      "char_start": 36,
+      "char_end": 78,
+      "surface_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0129-p02"
+    },
+    {
+      "char_start": 80,
+      "char_end": 110,
+      "surface_text": "Type 2 diabetes is not present",
+      "claim_text": "Type 2 diabetes is not present",
+      "kind": "diagnosis_contradiction",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": "DIAGNOSIS_CONTRADICTION",
+      "is_clinical": true,
+      "gold_id": "halluc-0129-p03"
+    }
+  ]
+}

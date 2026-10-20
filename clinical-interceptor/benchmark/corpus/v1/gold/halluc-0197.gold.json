@@ -1,0 +1,39 @@
+{
+  "note_id": "halluc-0197",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "b1ad6ac34a5968d82f5fd394544c16437d7da4874fae4a8d7232d6b1a42f56b6",
+  "char_length": 55,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 30,
+      "surface_text": "Type 2 diabetes is not present",
+      "claim_text": "Type 2 diabetes is not present",
+      "kind": "diagnosis_contradiction",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": "DIAGNOSIS_CONTRADICTION",
+      "is_clinical": true,
+      "gold_id": "halluc-0197-p01"
+    },
+    {
+      "char_start": 32,
+      "char_end": 54,
+      "surface_text": "Patient reports nausea",
+      "claim_text": "Patient reports nausea",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0197-p02"
+    }
+  ]
+}

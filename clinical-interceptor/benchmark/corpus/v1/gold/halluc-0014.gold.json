@@ -1,0 +1,81 @@
+{
+  "note_id": "halluc-0014",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "77836ff049ca5fe9ddeff750ed433467185d1e944a7e0ddab3813a7c27d8c6eb",
+  "char_length": 179,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 28,
+      "surface_text": "HbA1c was 6.1% on 2026-09-02",
+      "claim_text": "HbA1c was 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0014-p01"
+    },
+    {
+      "char_start": 30,
+      "char_end": 70,
+      "surface_text": "History of type 2 diabetes is documented",
+      "claim_text": "History of type 2 diabetes is documented",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0014-p02"
+    },
+    {
+      "char_start": 72,
+      "char_end": 107,
+      "surface_text": "Known drug allergies are documented",
+      "claim_text": "Known drug allergies are documented",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0014-p03"
+    },
+    {
+      "char_start": 109,
+      "char_end": 153,
+      "surface_text": "Started amoxicillin 500 mg TID for sinusitis",
+      "claim_text": "Started amoxicillin 500 mg TID for sinusitis",
+      "kind": "drug_allergy_order",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "drug_allergy_conflict",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0014-p04"
+    },
+    {
+      "char_start": 155,
+      "char_end": 178,
+      "surface_text": "No known drug allergies",
+      "claim_text": "No known drug allergies",
+      "kind": "allergy_denial",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0014-p05"
+    }
+  ]
+}

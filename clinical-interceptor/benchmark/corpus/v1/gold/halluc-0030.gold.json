@@ -1,0 +1,39 @@
+{
+  "note_id": "halluc-0030",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "89e8cec0e47a03a70e45e02f9ae3adfd540b4ab351631edc7233e9088fffb67d",
+  "char_length": 55,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 25,
+      "surface_text": "Patient reports headaches",
+      "claim_text": "Patient reports headaches",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0030-p01"
+    },
+    {
+      "char_start": 27,
+      "char_end": 54,
+      "surface_text": "Patient has type 2 diabetes",
+      "claim_text": "Patient has type 2 diabetes",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0030-p02"
+    }
+  ]
+}

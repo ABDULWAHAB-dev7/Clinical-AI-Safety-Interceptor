@@ -1,0 +1,39 @@
+{
+  "note_id": "halluc-0134",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "D",
+  "patient_ref": "Patient/pat-d",
+  "note_sha256": "bbeadaf44d5b4a38c0a95af374e0572e9a440e607911648c66a90ea4b5261269",
+  "char_length": 62,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 34,
+      "surface_text": "Amoxicillin 1500 mg was given once",
+      "claim_text": "Amoxicillin 1500 mg was given once",
+      "kind": "dose_above_limit",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": null,
+      "expected_category": "MEDICATION_DOSE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0134-p01"
+    },
+    {
+      "char_start": 36,
+      "char_end": 61,
+      "surface_text": "Patient reports headaches",
+      "claim_text": "Patient reports headaches",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0134-p02"
+    }
+  ]
+}

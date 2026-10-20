@@ -1,0 +1,39 @@
+{
+  "note_id": "halluc-0031",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "C",
+  "patient_ref": "Patient/pat-c",
+  "note_sha256": "f0207c198810a4b7401b7cb5aa070bb11a1ac19254572586ff8ef5f0bb383e4c",
+  "char_length": 76,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 22,
+      "surface_text": "Patient reports nausea",
+      "claim_text": "Patient reports nausea",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0031-p01"
+    },
+    {
+      "char_start": 24,
+      "char_end": 75,
+      "surface_text": "Amoxicillin 500 mg three times daily was prescribed",
+      "claim_text": "Amoxicillin 500 mg three times daily was prescribed",
+      "kind": "drug_allergy_order",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "drug_allergy_conflict",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0031-p02"
+    }
+  ]
+}

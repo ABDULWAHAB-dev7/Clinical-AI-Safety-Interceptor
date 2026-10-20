@@ -1,0 +1,39 @@
+{
+  "note_id": "halluc-0033",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "D",
+  "patient_ref": "Patient/pat-d",
+  "note_sha256": "ce20b8a81bed9d60f16a64b52751ca09ab77b002cd64b61f17ac24ed42550586",
+  "char_length": 59,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 22,
+      "surface_text": "Patient reports nausea",
+      "claim_text": "Patient reports nausea",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0033-p01"
+    },
+    {
+      "char_start": 24,
+      "char_end": 58,
+      "surface_text": "Amoxicillin 1500 mg was given once",
+      "claim_text": "Amoxicillin 1500 mg was given once",
+      "kind": "dose_above_limit",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": null,
+      "expected_category": "MEDICATION_DOSE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0033-p02"
+    }
+  ]
+}

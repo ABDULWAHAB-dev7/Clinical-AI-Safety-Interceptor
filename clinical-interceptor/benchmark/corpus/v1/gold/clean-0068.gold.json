@@ -1,0 +1,25 @@
+{
+  "note_id": "clean-0068",
+  "split": "dev",
+  "label": "clean",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "3011f0919d1b9432fc233482d69abcab5792cb532a860b0f11b377ced4ebcb7e",
+  "char_length": 28,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 27,
+      "surface_text": "Patient has type 2 diabetes",
+      "claim_text": "Patient has type 2 diabetes",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "clean-0068-p01"
+    }
+  ]
+}

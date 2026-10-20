@@ -1,0 +1,39 @@
+{
+  "note_id": "halluc-0099",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "b2ea219659fea0b3bea130aeb1f42c0cf728ea58bb1e95e455038ea514f6ac67",
+  "char_length": 48,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 22,
+      "surface_text": "Patient reports nausea",
+      "claim_text": "Patient reports nausea",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0099-p01"
+    },
+    {
+      "char_start": 24,
+      "char_end": 47,
+      "surface_text": "No known drug allergies",
+      "claim_text": "No known drug allergies",
+      "kind": "allergy_denial",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0099-p02"
+    }
+  ]
+}

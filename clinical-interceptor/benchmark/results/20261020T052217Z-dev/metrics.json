@@ -1,0 +1,108 @@
+{
+  "notes": 160,
+  "splits": [
+    "dev"
+  ],
+  "rates": {
+    "critical_recall": 1.0,
+    "critical_precision": 1.0,
+    "flag_recall": 1.0,
+    "flag_precision": 1.0,
+    "clean_note_flag_rate": 0.0,
+    "note_error_rate": 0.0,
+    "note_decision_accuracy": 1.0,
+    "nli_accuracy": 1.0,
+    "nli_macro_f1": 1.0,
+    "rule_accuracy": 1.0,
+    "fhir_ref_accuracy": 1.0,
+    "category_accuracy": 0.8709677419354839,
+    "offset_containment_rate": 1.0,
+    "offset_exact_rate": 1.0
+  },
+  "counts": {
+    "category_ok": 135,
+    "category_total": 155,
+    "crit_tp": 65,
+    "decision_ok": 160,
+    "decision_total": 160,
+    "exact": 341,
+    "flag_tp": 155,
+    "gold": 341,
+    "gold_crit": 65,
+    "gold_flag": 155,
+    "matched": 341,
+    "nli_ok": 341,
+    "nli|CONTRADICTION|CONTRADICTION": 97,
+    "nli|ENTAILMENT|ENTAILMENT": 186,
+    "nli|NEUTRAL|NEUTRAL": 58,
+    "notes": 160,
+    "notes_clean": 80,
+    "notes_halluc": 80,
+    "pred_crit": 65,
+    "pred_flag": 155,
+    "ref_ok": 341,
+    "rule_ok": 341,
+    "sev|CRITICAL|CRITICAL": 65,
+    "sev|SAFE|SAFE": 186,
+    "sev|WARNING|WARNING": 90
+  },
+  "bootstrap_95": {
+    "critical_recall": [
+      1.0,
+      1.0
+    ],
+    "critical_precision": [
+      1.0,
+      1.0
+    ],
+    "flag_recall": [
+      1.0,
+      1.0
+    ],
+    "clean_note_flag_rate": [
+      0.0,
+      0.0
+    ]
+  },
+  "gates": {
+    "BG2": {
+      "description": "CRITICAL recall (test split)",
+      "metric": "critical_recall",
+      "value": 1.0,
+      "threshold": ">= 0.8",
+      "status": "pass"
+    },
+    "BG3": {
+      "description": "clean-note false-positive rate (test split); reading of the table",
+      "metric": "clean_note_flag_rate",
+      "value": 0.0,
+      "threshold": "<= 0.05",
+      "status": "pass"
+    },
+    "BG1": {
+      "description": "NLI macro-F1 >= 0.95",
+      "metric": "nli_macro_f1",
+      "value": 1.0,
+      "threshold": ">= 0.95",
+      "status": "not_evaluable",
+      "note": "no claim in this corpus needs the NLI model, so NLI is not measured"
+    }
+  },
+  "latency": {
+    "audit": {
+      "p50_ms": 6.643,
+      "p95_ms": 8.996,
+      "n": 160
+    },
+    "decompose": {
+      "p50_ms": 6.666,
+      "p95_ms": 8.123,
+      "n": 160
+    },
+    "verify": {
+      "p50_ms": 6.929,
+      "p95_ms": 8.577,
+      "n": 160
+    }
+  }
+}

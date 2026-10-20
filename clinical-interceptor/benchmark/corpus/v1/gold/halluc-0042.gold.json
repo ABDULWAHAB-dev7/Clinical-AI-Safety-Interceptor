@@ -1,0 +1,39 @@
+{
+  "note_id": "halluc-0042",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "ab27dcdeedfb179d52552c78b8b4aae9e79e57bb6fd2b8d00d12cf5b15796206",
+  "char_length": 82,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 28,
+      "surface_text": "HbA1c was 6.1% on 2026-09-02",
+      "claim_text": "HbA1c was 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0042-p01"
+    },
+    {
+      "char_start": 30,
+      "char_end": 81,
+      "surface_text": "Amoxicillin 500 mg three times daily was prescribed",
+      "claim_text": "Amoxicillin 500 mg three times daily was prescribed",
+      "kind": "drug_allergy_order",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "drug_allergy_conflict",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0042-p02"
+    }
+  ]
+}

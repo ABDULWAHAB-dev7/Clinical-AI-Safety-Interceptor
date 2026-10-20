@@ -1,0 +1,53 @@
+{
+  "note_id": "halluc-0199",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "d516ec1011ed7abf2d6a82ecdf25e3e25e8515cfb3d5371ba7d6098e00c08308",
+  "char_length": 83,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 26,
+      "surface_text": "Patient has drug allergies",
+      "claim_text": "Patient has drug allergies",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0199-p01"
+    },
+    {
+      "char_start": 28,
+      "char_end": 58,
+      "surface_text": "Type 2 diabetes is not present",
+      "claim_text": "Type 2 diabetes is not present",
+      "kind": "diagnosis_contradiction",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": "DIAGNOSIS_CONTRADICTION",
+      "is_clinical": true,
+      "gold_id": "halluc-0199-p02"
+    },
+    {
+      "char_start": 60,
+      "char_end": 82,
+      "surface_text": "Patient reports nausea",
+      "claim_text": "Patient reports nausea",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0199-p03"
+    }
+  ]
+}

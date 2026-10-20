@@ -1,0 +1,25 @@
+{
+  "note_id": "halluc-0170",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "C",
+  "patient_ref": "Patient/pat-c",
+  "note_sha256": "e8c92437d56545365bb8bc777405c9bb4daf6cf80b710bd4aefdda242e624e29",
+  "char_length": 45,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 44,
+      "surface_text": "Started amoxicillin 500 mg TID for sinusitis",
+      "claim_text": "Started amoxicillin 500 mg TID for sinusitis",
+      "kind": "drug_allergy_order",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "drug_allergy_conflict",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0170-p01"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+Patient has drug allergies.
+History of type 2 diabetes is documented.

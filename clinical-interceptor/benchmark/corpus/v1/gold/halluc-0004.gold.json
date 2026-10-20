@@ -1,0 +1,25 @@
+{
+  "note_id": "halluc-0004",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "D",
+  "patient_ref": "Patient/pat-d",
+  "note_sha256": "7f56de3d7e335fada21592d17bb4440a1b8b0a85f1782950dc1c4d660c57e851",
+  "char_length": 43,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 42,
+      "surface_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 6.1% on 2026-09-02",
+      "kind": "lab_value_mismatch",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "contradiction",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": "LAB_VALUE_MISMATCH",
+      "is_clinical": true,
+      "gold_id": "halluc-0004-p01"
+    }
+  ]
+}

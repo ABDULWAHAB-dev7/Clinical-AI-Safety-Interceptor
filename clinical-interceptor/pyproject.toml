@@ -37,6 +37,8 @@ ignore = [
 "scripts/**" = ["S101", "S603", "S607", "S105", "S106"]
 "tools/**" = ["S101"]
 "migrations/**" = ["S608"]
+# Seeded RNG is for synthetic data only, not secrets; the proxy secret and git call are local benchmark values.
+"benchmark/**" = ["S311", "S105", "S607"]
 
 [tool.mypy]
 python_version = "3.11"

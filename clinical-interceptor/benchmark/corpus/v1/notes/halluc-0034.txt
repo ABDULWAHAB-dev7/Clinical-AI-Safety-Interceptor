@@ -1,0 +1,5 @@
+Patient has type 2 diabetes.
+Type 2 diabetes is not present.
+Patient has drug allergies.
+No known drug allergies.
+HbA1c was 8.2% on 2026-09-02.

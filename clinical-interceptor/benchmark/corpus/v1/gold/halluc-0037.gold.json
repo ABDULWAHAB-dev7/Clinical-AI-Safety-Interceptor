@@ -1,0 +1,53 @@
+{
+  "note_id": "halluc-0037",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "2ad184026ac020ce505a699289b4ea5d736d8fffc05e7858ffb03e71c28e60ff",
+  "char_length": 96,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 22,
+      "surface_text": "Patient reports nausea",
+      "claim_text": "Patient reports nausea",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0037-p01"
+    },
+    {
+      "char_start": 24,
+      "char_end": 51,
+      "surface_text": "Patient has type 2 diabetes",
+      "claim_text": "Patient has type 2 diabetes",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0037-p02"
+    },
+    {
+      "char_start": 53,
+      "char_end": 95,
+      "surface_text": "Hemoglobin A1c measured 8.2% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0037-p03"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "note_id": "halluc-0164",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "6efd1820ae0726e67f3ff0fb339415f2897de3e13b280633a5c3c93f75189de4",
+  "char_length": 30,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 29,
+      "surface_text": "No history of type 2 diabetes",
+      "claim_text": "No history of type 2 diabetes",
+      "kind": "diagnosis_contradiction",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": "DIAGNOSIS_CONTRADICTION",
+      "is_clinical": true,
+      "gold_id": "halluc-0164-p01"
+    }
+  ]
+}

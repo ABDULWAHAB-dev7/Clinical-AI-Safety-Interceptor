@@ -1,0 +1,39 @@
+{
+  "note_id": "halluc-0188",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "b51aec00ea73eac95d68437ed3596a89a4cce64b60940c5f6528b1cc7b50d90e",
+  "char_length": 77,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 51,
+      "surface_text": "Amoxicillin 500 mg three times daily was prescribed",
+      "claim_text": "Amoxicillin 500 mg three times daily was prescribed",
+      "kind": "drug_allergy_order",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "drug_allergy_conflict",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0188-p01"
+    },
+    {
+      "char_start": 53,
+      "char_end": 76,
+      "surface_text": "No known drug allergies",
+      "claim_text": "No known drug allergies",
+      "kind": "allergy_denial",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0188-p02"
+    }
+  ]
+}

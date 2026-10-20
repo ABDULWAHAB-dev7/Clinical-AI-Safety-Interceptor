@@ -1,0 +1,2 @@
+Patient has drug allergies.
+No known drug allergies.

@@ -1,0 +1,5 @@
+Patient has drug allergies.
+History of type 2 diabetes is documented.
+Hemoglobin A1c measured 8.2% on 2026-09-02.
+Patient denies known drug allergies.
+Hemoglobin A1c measured 6.1% on 2026-09-02.

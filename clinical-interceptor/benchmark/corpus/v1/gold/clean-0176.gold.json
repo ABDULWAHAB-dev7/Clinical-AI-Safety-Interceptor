@@ -1,0 +1,25 @@
+{
+  "note_id": "clean-0176",
+  "split": "test",
+  "label": "clean",
+  "patient_context": "A",
+  "patient_ref": "Patient/pat-a",
+  "note_sha256": "d1f47efce265dd15377f21cd460b700755000bbe4eab5cb1253f1c97c2c7d95c",
+  "char_length": 27,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 26,
+      "surface_text": "Patient has drug allergies",
+      "claim_text": "Patient has drug allergies",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "clean-0176-p01"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "note_id": "halluc-0026",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "C",
+  "patient_ref": "Patient/pat-c",
+  "note_sha256": "489130fa140fe1ef1c96a1e22603c9abb1c66cdb7286932f7da64adee7557801",
+  "char_length": 95,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 23,
+      "surface_text": "No known drug allergies",
+      "claim_text": "No known drug allergies",
+      "kind": "allergy_denial",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0026-p01"
+    },
+    {
+      "char_start": 25,
+      "char_end": 50,
+      "surface_text": "Patient reports headaches",
+      "claim_text": "Patient reports headaches",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0026-p02"
+    },
+    {
+      "char_start": 52,
+      "char_end": 94,
+      "surface_text": "Hemoglobin A1c measured 8.2% on 2026-09-02",
+      "claim_text": "Hemoglobin A1c measured 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "halluc-0026-p03"
+    }
+  ]
+}

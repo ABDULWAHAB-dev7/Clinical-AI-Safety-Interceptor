@@ -1,0 +1,39 @@
+{
+  "note_id": "clean-0162",
+  "split": "test",
+  "label": "clean",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "590941f0b3703047d3a3c954839c849ba37235954008b34624e9d791b0fc4155",
+  "char_length": 58,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 27,
+      "surface_text": "Patient has type 2 diabetes",
+      "claim_text": "Patient has type 2 diabetes",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "clean-0162-p01"
+    },
+    {
+      "char_start": 29,
+      "char_end": 57,
+      "surface_text": "HbA1c was 8.2% on 2026-09-02",
+      "claim_text": "HbA1c was 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "clean-0162-p02"
+    }
+  ]
+}

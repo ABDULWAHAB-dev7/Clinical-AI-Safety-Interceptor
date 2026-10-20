@@ -1,0 +1,2 @@
+Patient reports nausea.
+Known drug allergies are documented.

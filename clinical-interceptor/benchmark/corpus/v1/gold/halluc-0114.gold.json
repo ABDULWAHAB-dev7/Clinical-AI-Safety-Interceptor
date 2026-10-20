@@ -1,0 +1,25 @@
+{
+  "note_id": "halluc-0114",
+  "split": "dev",
+  "label": "halluc",
+  "patient_context": "C",
+  "patient_ref": "Patient/pat-c",
+  "note_sha256": "a5b80231827cd6f9e85d2e01658004a24c627962dd77cd4624bafa440f43f0c3",
+  "char_length": 52,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 51,
+      "surface_text": "Amoxicillin 500 mg three times daily was prescribed",
+      "claim_text": "Amoxicillin 500 mg three times daily was prescribed",
+      "kind": "drug_allergy_order",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "drug_allergy_conflict",
+      "expected_ref": "AllergyIntolerance/allergy-penicillin-001",
+      "expected_category": "DRUG_ALLERGY_CONFLICT",
+      "is_clinical": true,
+      "gold_id": "halluc-0114-p01"
+    }
+  ]
+}

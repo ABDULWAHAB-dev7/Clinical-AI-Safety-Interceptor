@@ -1,0 +1,2 @@
+Patient has drug allergies.
+Started amoxicillin 500 mg TID for sinusitis.

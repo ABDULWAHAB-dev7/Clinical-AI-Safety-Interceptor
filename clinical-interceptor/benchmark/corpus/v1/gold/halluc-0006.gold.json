@@ -1,0 +1,25 @@
+{
+  "note_id": "halluc-0006",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "f9ebf77b6ea756815f2a3f841490b3fc04729b7b4d516cb77bd476f6f20dd3c0",
+  "char_length": 31,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 30,
+      "surface_text": "Type 2 diabetes is not present",
+      "claim_text": "Type 2 diabetes is not present",
+      "kind": "diagnosis_contradiction",
+      "expected_nli": "CONTRADICTION",
+      "expected_risk": "CRITICAL",
+      "expected_risk_rule": "contradiction_high_risk",
+      "expected_ref": "Condition/cond-t2dm-001",
+      "expected_category": "DIAGNOSIS_CONTRADICTION",
+      "is_clinical": true,
+      "gold_id": "halluc-0006-p01"
+    }
+  ]
+}

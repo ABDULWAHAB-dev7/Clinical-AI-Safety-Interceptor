@@ -1,0 +1,5 @@
+Patient reports nausea.
+Patient has type 2 diabetes.
+HbA1c was 8.2% on 2026-09-02.
+Started amoxicillin 500 mg TID for sinusitis.
+No known drug allergies.

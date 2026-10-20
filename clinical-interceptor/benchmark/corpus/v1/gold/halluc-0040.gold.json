@@ -1,0 +1,25 @@
+{
+  "note_id": "halluc-0040",
+  "split": "test",
+  "label": "halluc",
+  "patient_context": "D",
+  "patient_ref": "Patient/pat-d",
+  "note_sha256": "0049a39a3670cbf70499f3302d9dc89cbb70801ab0dbff7fa80aacc62fbd9fd1",
+  "char_length": 23,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 22,
+      "surface_text": "Patient reports nausea",
+      "claim_text": "Patient reports nausea",
+      "kind": "unsupported",
+      "expected_nli": "NEUTRAL",
+      "expected_risk": "WARNING",
+      "expected_risk_rule": "unsupported_clinical",
+      "expected_ref": null,
+      "expected_category": "UNSUPPORTED_CLAIM",
+      "is_clinical": true,
+      "gold_id": "halluc-0040-p01"
+    }
+  ]
+}

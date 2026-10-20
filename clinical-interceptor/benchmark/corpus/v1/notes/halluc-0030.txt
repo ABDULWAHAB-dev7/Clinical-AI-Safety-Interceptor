@@ -1,0 +1,2 @@
+Patient reports headaches.
+Patient has type 2 diabetes.

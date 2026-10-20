@@ -1,0 +1,2 @@
+Patient denies known drug allergies.
+No history of type 2 diabetes.

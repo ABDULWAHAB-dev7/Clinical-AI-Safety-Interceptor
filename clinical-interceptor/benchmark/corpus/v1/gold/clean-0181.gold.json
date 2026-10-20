@@ -1,0 +1,25 @@
+{
+  "note_id": "clean-0181",
+  "split": "test",
+  "label": "clean",
+  "patient_context": "B",
+  "patient_ref": "Patient/pat-b",
+  "note_sha256": "994ef237b251e322da92ef2c2a432cb318b29ce5a77ebf0aa252f9a74c2f8d3b",
+  "char_length": 29,
+  "propositions": [
+    {
+      "char_start": 0,
+      "char_end": 28,
+      "surface_text": "HbA1c was 8.2% on 2026-09-02",
+      "claim_text": "HbA1c was 8.2% on 2026-09-02",
+      "kind": "grounded",
+      "expected_nli": "ENTAILMENT",
+      "expected_risk": "SAFE",
+      "expected_risk_rule": "entailed",
+      "expected_ref": "Observation/obs-hba1c-001",
+      "expected_category": null,
+      "is_clinical": true,
+      "gold_id": "clean-0181-p01"
+    }
+  ]
+}

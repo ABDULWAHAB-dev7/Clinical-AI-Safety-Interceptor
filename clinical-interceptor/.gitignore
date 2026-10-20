@@ -2,3 +2,7 @@ var/
 __pycache__/
 *.pyc
 seed/certs/
+
+# benchmark (PLAN 7.1): real MIMIC-IV data must never enter the repository
+benchmark/corpus/mimic/
+data/

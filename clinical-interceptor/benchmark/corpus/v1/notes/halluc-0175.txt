@@ -1,0 +1,4 @@
+Patient reports headaches.
+Known drug allergies are documented.
+Amoxicillin 500 mg three times daily was prescribed.
+HbA1c was 6.1% on 2026-09-02.
