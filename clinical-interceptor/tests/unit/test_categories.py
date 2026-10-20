@@ -34,9 +34,14 @@ class CategoryTableTests(unittest.TestCase):
         r = result(NLIClass.CONTRADICTION, "contradiction_high_risk", severity=RiskSeverity.CRITICAL)
         self.assertEqual(category(r, "No known drug allergies", [ALLERGY]), "DRUG_ALLERGY_CONFLICT")
 
-    def test_row_1_contradiction_with_a_drug_in_an_allergy_class(self):
+    def test_row_2a_contradiction_with_a_drug_in_an_allergy_class_and_no_dose(self):
         r = result(NLIClass.CONTRADICTION, "contradiction_high_risk", severity=RiskSeverity.CRITICAL)
-        self.assertEqual(category(r, "amoxicillin 5000 mg", [AMOXICILLIN]), "DRUG_ALLERGY_CONFLICT")
+        self.assertEqual(category(r, "Started amoxicillin", [AMOXICILLIN]), "DRUG_ALLERGY_CONFLICT")
+
+    def test_dose_above_limit_in_a_patient_with_no_matching_allergy_is_a_dose_mismatch(self):
+        # rule 2 fired (no allergy matched), so the category is the dose row, not the allergy row
+        r = result(NLIClass.CONTRADICTION, "contradiction_high_risk", severity=RiskSeverity.CRITICAL)
+        self.assertEqual(category(r, "amoxicillin 5000 mg", [AMOXICILLIN]), "MEDICATION_DOSE_MISMATCH")
 
     def test_row_2_medication_with_a_dose_or_frequency(self):
         r = result(NLIClass.CONTRADICTION, "contradiction_high_risk", severity=RiskSeverity.CRITICAL)
@@ -70,9 +75,13 @@ class CategoryTableTests(unittest.TestCase):
     def test_row_7_anything_else_is_other(self):
         self.assertEqual(category(result(NLIClass.CONTRADICTION, "contradiction"), "something"), "OTHER")
 
-    def test_order_allergy_row_wins_over_the_dose_row(self):
-        r = result(NLIClass.CONTRADICTION, "contradiction_high_risk", severity=RiskSeverity.CRITICAL)
+    def test_order_matched_allergy_rule_wins_over_the_dose_row(self):
+        r = result(NLIClass.NEUTRAL, "drug_allergy_conflict", severity=RiskSeverity.CRITICAL)
         self.assertEqual(category(r, "amoxicillin 5000 mg once", [AMOXICILLIN]), "DRUG_ALLERGY_CONFLICT")
+
+    def test_order_dose_row_wins_over_the_allergy_class_row(self):
+        r = result(NLIClass.CONTRADICTION, "contradiction_high_risk", severity=RiskSeverity.CRITICAL)
+        self.assertEqual(category(r, "amoxicillin 5000 mg once", [AMOXICILLIN]), "MEDICATION_DOSE_MISMATCH")
 
     def test_order_diagnosis_row_wins_over_the_lab_row(self):
         r = result(NLIClass.CONTRADICTION, "contradiction_high_risk", ref="Observation/obs-1")

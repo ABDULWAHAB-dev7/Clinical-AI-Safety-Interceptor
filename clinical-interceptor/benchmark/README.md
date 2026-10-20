@@ -62,11 +62,10 @@ Gates (PLAN 7.5). The plan's gate table is garbled in places, so only the readab
 | BG3 | clean-note flag rate, test split | <= 0.05 | enforced. This is my reading of the table, to reconcile with PRD.md |
 | BG6 to BG8 | latency budgets | 800, 250 and 400 ms | reported in `metrics.json`, not enforced: the plan's mapping of budgets to scopes is unclear |
 
-## Known finding: category labels
+## Resolved finding: category labels
 
-API.md 7.1.2 rule 1 labels any CONTRADICTION that involves a drug in an allergy class as `DRUG_ALLERGY_CONFLICT`. It
-does this even when the patient has no matching allergy. So "Started amoxicillin 1500 mg once", a dose above the limit
-in a patient with no penicillin allergy, is labelled `DRUG_ALLERGY_CONFLICT`. The gold label in this corpus is
-`MEDICATION_DOSE_MISMATCH`, which matches the clinical meaning. That disagreement is why `category_accuracy` is about
-0.87, and every miss is of this kind. The severity and rule are correct. Whether the contract should change is a
-decision for the project owner, so the code and the gold are both left as they are.
+Until 2026-10-20, API.md 7.1.2 row 1 sent a dose contradiction for a drug in an allergy class to `DRUG_ALLERGY_CONFLICT`,
+even with no matching allergy. The gold label here is `MEDICATION_DOSE_MISMATCH`, and category accuracy was 0.87 on both
+splits. The contract was amended (`docs/api-changes/2026-10-20-category-dose-mismatch.md`) and the code follows it, so
+category accuracy is now 1.00 on both splits. The gold labels were written before the amendment and were not changed to
+suit it. The amendment is a decision by the project owner, not something the benchmark can confirm.

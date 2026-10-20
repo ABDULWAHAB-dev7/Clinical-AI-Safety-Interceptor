@@ -1,7 +1,7 @@
 {
-  "notes": 240,
+  "notes": 160,
   "splits": [
-    "test"
+    "dev"
   ],
   "rates": {
     "critical_recall": 1.0,
@@ -15,36 +15,36 @@
     "nli_macro_f1": 1.0,
     "rule_accuracy": 1.0,
     "fhir_ref_accuracy": 1.0,
-    "category_accuracy": 0.8739495798319328,
+    "category_accuracy": 1.0,
     "offset_containment_rate": 1.0,
     "offset_exact_rate": 1.0
   },
   "counts": {
-    "category_ok": 208,
-    "category_total": 238,
-    "crit_tp": 117,
-    "decision_ok": 240,
-    "decision_total": 240,
-    "exact": 550,
-    "flag_tp": 238,
-    "gold": 550,
-    "gold_crit": 117,
-    "gold_flag": 238,
-    "matched": 550,
-    "nli_ok": 550,
-    "nli|CONTRADICTION|CONTRADICTION": 147,
-    "nli|ENTAILMENT|ENTAILMENT": 312,
-    "nli|NEUTRAL|NEUTRAL": 91,
-    "notes": 240,
-    "notes_clean": 120,
-    "notes_halluc": 120,
-    "pred_crit": 117,
-    "pred_flag": 238,
-    "ref_ok": 550,
-    "rule_ok": 550,
-    "sev|CRITICAL|CRITICAL": 117,
-    "sev|SAFE|SAFE": 312,
-    "sev|WARNING|WARNING": 121
+    "category_ok": 155,
+    "category_total": 155,
+    "crit_tp": 65,
+    "decision_ok": 160,
+    "decision_total": 160,
+    "exact": 341,
+    "flag_tp": 155,
+    "gold": 341,
+    "gold_crit": 65,
+    "gold_flag": 155,
+    "matched": 341,
+    "nli_ok": 341,
+    "nli|CONTRADICTION|CONTRADICTION": 97,
+    "nli|ENTAILMENT|ENTAILMENT": 186,
+    "nli|NEUTRAL|NEUTRAL": 58,
+    "notes": 160,
+    "notes_clean": 80,
+    "notes_halluc": 80,
+    "pred_crit": 65,
+    "pred_flag": 155,
+    "ref_ok": 341,
+    "rule_ok": 341,
+    "sev|CRITICAL|CRITICAL": 65,
+    "sev|SAFE|SAFE": 186,
+    "sev|WARNING|WARNING": 90
   },
   "bootstrap_95": {
     "critical_recall": [
@@ -90,19 +90,19 @@
   },
   "latency": {
     "audit": {
-      "p50_ms": 7.048,
-      "p95_ms": 8.873,
-      "n": 240
+      "p50_ms": 7.814,
+      "p95_ms": 10.517,
+      "n": 160
     },
     "decompose": {
-      "p50_ms": 7.004,
-      "p95_ms": 9.276,
-      "n": 240
+      "p50_ms": 8.408,
+      "p95_ms": 11.685,
+      "n": 160
     },
     "verify": {
-      "p50_ms": 7.172,
-      "p95_ms": 9.71,
-      "n": 240
+      "p50_ms": 8.356,
+      "p95_ms": 11.067,
+      "n": 160
     }
   }
 }

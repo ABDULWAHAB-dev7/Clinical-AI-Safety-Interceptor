@@ -1,10 +1,12 @@
 """Hallucination category (API.md 7.1.2) and attribution helpers. The server sets the category; clients never do.
 
-Evaluated in order, the first match wins:
-  1  risk_rule drug_allergy_conflict, or a CONTRADICTION where an entity is an allergy or a drug in an allergy class
+Evaluated in order, the first match wins. This is the amended 7.1.2 (docs/api-changes/2026-10-20-category-dose-mismatch.md):
+  1  risk_rule drug_allergy_conflict, or a CONTRADICTION where an entity is an allergy concept
         -> DRUG_ALLERGY_CONFLICT
   2  CONTRADICTION where an entity is a medication and the claim states a dose or frequency
         -> MEDICATION_DOSE_MISMATCH
+  2a CONTRADICTION where an entity is a drug in an allergy class, with no dose or frequency
+        -> DRUG_ALLERGY_CONFLICT
   3  CONTRADICTION where an entity is a diagnosis -> DIAGNOSIS_CONTRADICTION
   4  CONTRADICTION or NEUTRAL where the matched fact is an Observation -> LAB_VALUE_MISMATCH
   5  a date inconsistent with the matched fact -> TEMPORAL_MISMATCH   (NOT evaluated: the audit request does not carry
@@ -29,11 +31,13 @@ def hallucination_category(result, claim_text, entities, knowledge):
     allergy_classes = set(knowledge.allergy_classes.values())
     allergy_class_drug = any(knowledge.ingredient_classes.get(e.code) in allergy_classes for e in rx)
 
-    if result.risk_rule == "drug_allergy_conflict" or (contradiction and (allergy_concept or allergy_class_drug)):
+    if result.risk_rule == "drug_allergy_conflict" or (contradiction and allergy_concept):
         return "DRUG_ALLERGY_CONFLICT"
     dose, per_day = parse_dose(claim_text)
     if contradiction and rx and (dose is not None or per_day is not None):
         return "MEDICATION_DOSE_MISMATCH"
+    if contradiction and allergy_class_drug:
+        return "DRUG_ALLERGY_CONFLICT"
     if contradiction and any(
         e.system is CodeSystem.SNOMED_CT and e.code not in knowledge.allergy_concept_codes for e in entities
     ):
