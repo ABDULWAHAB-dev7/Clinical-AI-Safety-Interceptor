@@ -1,4 +1,6 @@
-# REQUIRES CLINICAL REVIEW. Synthetic test values only (PLAN 2.4, 4.5). Not clinical guidance.
+# REQUIRES CLINICAL REVIEW. clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY. Not clinical guidance.
+# RxCUI codes were checked on RxNav (rxnav.nlm.nih.gov, 2026-10-20). Drug-class and allergy-concept mappings below are
+# project placeholders: they are not taken from a published class table, and each needs a source before use.
 #
 # SNOMED CT codes that denote an allergy concept in general (a claim naming one of these is about allergies).
 allergy_concept_codes:
@@ -11,3 +13,12 @@ allergy_classes:
 # RxNorm ingredient -> drug class.
 ingredient_classes:
   "723": penicillin   # Amoxicillin
+
+clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY
+rule_citations:
+  - rule: "allergy_concept_codes 416098002"
+    source_citation: "SNOMED CT 416098002 (Drug allergy). Code not verified this session."
+  - rule: "allergy_classes 91936005"
+    source_citation: "SNOMED CT 91936005 (Allergy to penicillin). Code not verified this session. Class mapping is a project placeholder."
+  - rule: "ingredient_classes 723"
+    source_citation: "RxNorm RxCUI 723 (amoxicillin), verified on RxNav 2026-10-20. Class 'penicillin' is a project placeholder; the beta-lactam cross-reactivity mapping is NOT yet sourced."

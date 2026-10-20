@@ -1,5 +1,10 @@
 # Starting values (PLAN 4.3, 4.4). Tune on the Phase 7 dev split only, and record the run ID that justified a change.
+# clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY. No labelled clinical dataset has been used to calibrate these.
+# contradiction_critical_min is set by the policy change record docs/policy-changes/2026-10-20-nli-critical-threshold.md.
+source_citation: "Project settings. Not calibrated on clinical text; see docs/policy-changes/2026-10-20-nli-critical-threshold.md."
+clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY
 contradiction_min: 0.50        # NLI contradiction probability needed to call CONTRADICTION
+contradiction_critical_min: 0.80  # above this, an NLI contradiction in a high-risk class is CRITICAL (blocks); below, WARNING
 entailment_min: 0.85           # min_confidence_entailment (DATABASE.md 2.4)
 value_tolerance_abs: 0.0       # lab value tolerance; placeholder until the tolerance table exists (PRD open question 2)
 nli_timeout_seconds: 5.0       # per NLI call; a timeout fails closed

@@ -37,6 +37,7 @@ class DoseLimit:
 @dataclass(frozen=True)
 class Thresholds:
     contradiction_min: float
+    contradiction_critical_min: float
     entailment_min: float
     value_tolerance_abs: float
     nli_timeout_seconds: float
@@ -104,11 +105,12 @@ def _load_thresholds(path):
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     thresholds = Thresholds(
         contradiction_min=float(raw["contradiction_min"]),
+        contradiction_critical_min=float(raw["contradiction_critical_min"]),
         entailment_min=float(raw["entailment_min"]),
         value_tolerance_abs=float(raw["value_tolerance_abs"]),
         nli_timeout_seconds=float(raw["nli_timeout_seconds"]),
     )
-    for value in (thresholds.contradiction_min, thresholds.entailment_min):
+    for value in (thresholds.contradiction_min, thresholds.contradiction_critical_min, thresholds.entailment_min):
         if not 0 < value <= 1:
             raise ValueError("thresholds must be in (0, 1]")
     if thresholds.value_tolerance_abs < 0 or thresholds.nli_timeout_seconds <= 0:

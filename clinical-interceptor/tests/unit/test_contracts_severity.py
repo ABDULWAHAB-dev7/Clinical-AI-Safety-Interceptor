@@ -43,9 +43,27 @@ class SeverityTests(unittest.TestCase):
 
     def test_priority_two_contradiction_on_high_risk_entity(self):
         self.assertEqual(
-            classify_risk(facts(nli_class=NLIClass.CONTRADICTION, entity_kinds=frozenset({"allergy"}))),
+            classify_risk(facts(nli_class=NLIClass.CONTRADICTION, confidence=0.95, entity_kinds=frozenset({"allergy"}))),
             (RiskSeverity.CRITICAL, "contradiction_high_risk"),
         )
+
+    def test_nli_contradiction_at_or_below_0_80_is_a_warning_even_on_high_risk(self):
+        # policy change 2026-10-20: only P > 0.80 blocks
+        for p in (0.80, 0.6):
+            self.assertEqual(
+                classify_risk(facts(nli_class=NLIClass.CONTRADICTION, confidence=p, entity_kinds=frozenset({"allergy"}))),
+                (RiskSeverity.WARNING, "contradiction"),
+            )
+
+    def test_deterministic_contradiction_on_high_risk_still_blocks(self):
+        self.assertEqual(
+            classify_risk(facts(nli_class=NLIClass.CONTRADICTION, confidence=1.0, entity_kinds=frozenset({"active_diagnosis"}))),
+            (RiskSeverity.CRITICAL, "contradiction_high_risk"),
+        )
+
+    def test_neutral_is_a_warning_never_a_block(self):
+        self.assertEqual(classify_risk(facts(nli_class=NLIClass.NEUTRAL, confidence=0.99)),
+                         (RiskSeverity.WARNING, "unsupported_clinical"))
 
     def test_priority_three_contradiction_other(self):
         self.assertEqual(

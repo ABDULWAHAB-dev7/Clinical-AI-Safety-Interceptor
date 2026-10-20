@@ -1,11 +1,22 @@
-# REQUIRES CLINICAL REVIEW. Placeholder values for tests only; not clinical guidance (PLAN 4.5).
-# Keyed by RxNorm ingredient code. Units are milligrams.
+# REQUIRES CLINICAL REVIEW. clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY
+#
+# These two ceilings are PLACEHOLDERS from the project's tests. No FDA DailyMed label was retrieved for them, so they
+# are NOT clinical guidance. The DailyMed lookup on 2026-10-20 did not return the amoxicillin label, and the lisinopril
+# result was a combination product. Replace each entry with a label-cited value and a clinical review before any use.
+#
+# Keyed by RxNorm ingredient code. Units are milligrams. RxCUI codes were verified on RxNav (rxnav.nlm.nih.gov) on
+# 2026-10-20: amoxicillin 723, metformin 6809.
+clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY
 limits:
   "723":
     name: amoxicillin
     max_single_mg: 1000
     max_daily_mg: 3000
+    source_citation: "UNVERIFIED placeholder from project tests. RxCUI 723 verified on RxNav. No FDA label ceiling retrieved."
+    clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY
   "6809":
     name: metformin
     max_single_mg: 1000
     max_daily_mg: 2550
+    source_citation: "UNVERIFIED placeholder from project tests. RxCUI 6809 verified on RxNav. No FDA label ceiling retrieved."
+    clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY

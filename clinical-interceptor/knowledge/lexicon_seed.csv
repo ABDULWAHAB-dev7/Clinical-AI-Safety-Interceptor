@@ -1,4 +1,6 @@
-# REQUIRES CLINICAL REVIEW. Synthetic seed lexicon for tests; not a terminology source (PLAN A3: local file, no remote lookup).
+# REQUIRES CLINICAL REVIEW. clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY. Seed lexicon, not a terminology source.
+# Code sources: RxNorm amoxicillin 723, lisinopril 29046, metformin 6809 verified on RxNav 2026-10-20. LOINC 4548-4 (HbA1c),
+# SNOMED CT 44054006 and 416098002 are not verified in this session.
 # Columns: surface (lowercase), system (snomed|loinc|rxnorm), code, display
 surface,system,code,display
 drug allergies,snomed,416098002,Drug allergy

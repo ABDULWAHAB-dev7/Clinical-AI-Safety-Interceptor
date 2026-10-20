@@ -108,7 +108,8 @@ def verify_claim(claim, triples, knowledge, verifier_version, nli_model=None):
         matches_allergy=decision.matches_allergy,
         entity_kinds=decision.kinds,
     )
-    severity, rule = classify_risk(facts, entailment_floor=knowledge.thresholds.entailment_min)
+    severity, rule = classify_risk(facts, entailment_floor=knowledge.thresholds.entailment_min,
+                                   contradiction_critical_min=knowledge.thresholds.contradiction_critical_min)
     try:
         result = VerificationResult(
             result_id=uuid.uuid4(),
