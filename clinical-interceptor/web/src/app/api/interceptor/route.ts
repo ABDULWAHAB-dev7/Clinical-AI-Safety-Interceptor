@@ -1,67 +1,21 @@
-import { readFileSync } from "node:fs";
-import { Agent, fetch as upstreamFetch } from "undici";
 import { shortPatientId } from "@/lib/report";
+import { call, config, NotConfigured, problem } from "@/lib/upstream";
 
-// The only code that calls the interceptor. The client certificate and the bearer token come from server-side
-// environment variables and never reach the browser. None of them may carry the browser-exposed prefix.
-//
-//   INTERCEPTOR_API_URL           base URL, for example https://interceptor.internal:8443
-//   INTERCEPTOR_CLIENT_CERT_FILE  PEM client certificate registered with the interceptor
-//   INTERCEPTOR_CLIENT_KEY_FILE   its private key
-//   INTERCEPTOR_CA_FILE           CA that signed the interceptor's server certificate
-//   INTERCEPTOR_BEARER_TOKEN      a short-lived JWT with the interceptor:read scope
+// Reads a saved note and report by id. The only read path the dashboard uses. The browser never holds a certificate
+// or a bearer token; both are used here, on the server.
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const TIMEOUT_MS = 10_000;
-let agent: Agent | undefined;
-
-function problem(status: number, code: string, message: string) {
-  return Response.json({ error: { code, message } }, { status, headers: { "Cache-Control": "no-store" } });
-}
-
-function dispatcher(): Agent {
-  agent ??= new Agent({
-    connect: {
-      cert: readFileSync(process.env.INTERCEPTOR_CLIENT_CERT_FILE as string),
-      key: readFileSync(process.env.INTERCEPTOR_CLIENT_KEY_FILE as string),
-      ca: process.env.INTERCEPTOR_CA_FILE ? readFileSync(process.env.INTERCEPTOR_CA_FILE) : undefined,
-    },
-  });
-  return agent;
-}
-
-async function read(base: string, path: string, token: string): Promise<Response | Record<string, unknown>> {
-  let response;
-  try {
-    response = await upstreamFetch(`${base}${path}`, {
-      dispatcher: dispatcher(),
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-  } catch {
-    return problem(502, "UPSTREAM_UNREACHABLE", "The interceptor could not be reached.");
-  }
-  if (response.status === 404) return problem(404, "NOT_FOUND", "No such note or report.");
-  if (response.status === 401 || response.status === 403) {
-    return problem(502, "UPSTREAM_REFUSED", "The interceptor refused this dashboard's credentials.");
-  }
-  if (!response.ok) return problem(502, "UPSTREAM_ERROR", "The interceptor returned an error.");
-  return (await response.json()) as Record<string, unknown>;
-}
 
 export async function GET(request: Request) {
-  const base = process.env.INTERCEPTOR_API_URL;
-  const token = process.env.INTERCEPTOR_BEARER_TOKEN;
-  if (
-    !base ||
-    !token ||
-    !process.env.INTERCEPTOR_CLIENT_CERT_FILE ||
-    !process.env.INTERCEPTOR_CLIENT_KEY_FILE
-  ) {
-    return problem(503, "NOT_CONFIGURED", "The dashboard is not connected to an interceptor.");
+  let cfg;
+  try {
+    cfg = config();
+  } catch (error) {
+    if (error instanceof NotConfigured) return problem(503, "NOT_CONFIGURED", error.message);
+    throw error;
   }
 
   const { searchParams } = new URL(request.url);
@@ -71,22 +25,30 @@ export async function GET(request: Request) {
     return problem(400, "BAD_REQUEST", "noteId and reportId must both be UUIDs.");
   }
 
-  const note = await read(base, `/v1/interceptor/notes/${noteId}`, token);
-  if (note instanceof Response) return note;
-  const report = await read(base, `/v1/interceptor/audit/reports/${reportId}`, token);
-  if (report instanceof Response) return report;
-  if (report.note_id !== noteId) return problem(404, "NOT_FOUND", "That report does not belong to that note.");
+  const note = await call(cfg, "GET", `/v1/interceptor/notes/${noteId}`);
+  if (note.status === 0) return problem(502, "UPSTREAM_UNREACHABLE", "The interceptor could not be reached.");
+  if (note.status === 404) return problem(404, "NOT_FOUND", "No such note or report.");
+  if (note.status === 401 || note.status === 403) {
+    return problem(502, "UPSTREAM_REFUSED", "The interceptor refused this dashboard's credentials.");
+  }
+  if (note.status !== 200) return problem(502, "UPSTREAM_ERROR", "The interceptor returned an error.");
+
+  const report = await call(cfg, "GET", `/v1/interceptor/audit/reports/${reportId}`);
+  if (report.status !== 200) return problem(502, "UPSTREAM_ERROR", "The interceptor returned an error.");
+  const body = report.body as { note_id: string; patient_pseudo_id: string } & Record<string, unknown>;
+  const noteBody = note.body as Record<string, unknown>;
+  if (body.note_id !== noteId) return problem(404, "NOT_FOUND", "That report does not belong to that note.");
 
   // Only what the page needs. The patient id is cut to 8 characters here, so the browser never receives it in full.
   return Response.json(
     {
       note: {
-        note_id: note.note_id,
-        note_sha256: note.note_sha256,
-        char_length: note.char_length,
-        pipeline_status: note.pipeline_status,
+        note_id: noteBody.note_id,
+        note_sha256: noteBody.note_sha256,
+        char_length: noteBody.char_length,
+        pipeline_status: noteBody.pipeline_status,
       },
-      report: { ...report, patient_pseudo_id: shortPatientId(String(report.patient_pseudo_id)) },
+      report: { ...body, patient_pseudo_id: shortPatientId(body.patient_pseudo_id) },
     },
     { headers: { "Cache-Control": "no-store" } },
   );
