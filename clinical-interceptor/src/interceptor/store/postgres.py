@@ -5,6 +5,8 @@ The repository never updates or deletes audit rows; the database triggers reject
 """
 
 
+import threading
+
 import psycopg
 from psycopg.types.json import Jsonb
 from psycopg_pool import ConnectionPool
@@ -118,6 +120,23 @@ def upsert_note(conn, *, patient_pseudo_id, encounter_pseudo_id, source_system, 
     return row[0]
 
 
+_POOLS = {}  # one pool per (DSN, connect timeout), shared by every store in the process
+_POOLS_LOCK = threading.Lock()
+
+
+def _shared_pool(dsn, connect_timeout, pool_size):
+    key = (dsn, connect_timeout, pool_size)
+    with _POOLS_LOCK:
+        pool = _POOLS.get(key)
+        if pool is None or pool.closed:
+            pool = ConnectionPool(dsn, min_size=1, max_size=pool_size, timeout=connect_timeout + 3,
+                                  # No automatic prepared statements: a cached plan points at the old table IDs
+                                  # after a migration or a schema reset, and every later call on it would fail.
+                                  kwargs={"connect_timeout": connect_timeout, "prepare_threshold": None}, open=True)
+            _POOLS[key] = pool
+        return pool
+
+
 class PostgresAuditStore:
     """Writes one request's records in a single transaction. Any database error is AUDIT_WRITE_FAILURE."""
 
@@ -126,16 +145,14 @@ class PostgresAuditStore:
         # connect, and one request makes several store calls.
         self.dsn = dsn
         self.connect_timeout = connect_timeout
-        self._pool = ConnectionPool(dsn, min_size=1, max_size=pool_size, timeout=connect_timeout + 3,
-                                    kwargs={"connect_timeout": connect_timeout}, open=True)
+        # Shared: many stores (one per app, and one per test) must not each hold their own connections.
+        self._pool = _shared_pool(dsn, connect_timeout, pool_size)
 
     def _connect(self):
         # Used as `with self._connect() as conn:`, which commits on success and rolls back on any exception,
         # as psycopg.connect did.
         return self._pool.connection()
 
-    def close(self):
-        self._pool.close()
 
     def ping(self):
         try:
