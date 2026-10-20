@@ -87,6 +87,10 @@ class AuditRefs:
     events: tuple  # (claim_id, event_id, detected_at)
 
 
+class OverrideRefused(Exception):
+    """A clinician override cannot be recorded: no such finding, or it was already reviewed."""
+
+
 class MemoryAuditStore:
     """Holds records in memory. `fail=True` simulates an audit write failure (fail-closed tests)."""
 
@@ -97,6 +101,7 @@ class MemoryAuditStore:
         self.notes = {}  # (patient_pseudo_id, note_sha256) -> note dict
         self.traces = []  # dicts: note_id, patient, stage, trace_id, payload, created_at
         self.events = []  # dicts: trace_id, note_id, event_id, claim_id, ..., detected_at
+        self.reviews = []  # append-only review decisions (hallucination_reviews): event_id, resolution, reviewer_ref
 
     def ping(self):
         return True
@@ -208,6 +213,23 @@ class MemoryAuditStore:
         trace_id = self._add_trace(note_id, note["patient_pseudo_id"], stage.stage, stage)
         ids = {e.claim_id: self._add_event(trace_id, note_id, note["patient_pseudo_id"], e) for e in events}
         return trace_id, ids
+
+    def record_override(self, *, report_id, claim_id, reviewer_ref, comment, note_status=None):
+        """Appends a FALSE_POSITIVE review to the event for this claim, and optionally sets the note status."""
+        self._check()
+        report = self.get_report(report_id)
+        event = None if report is None else next((e for e in report["events"] if e["claim_id"] == claim_id), None)
+        if event is None:
+            raise OverrideRefused("no finding for this span in the report")
+        if any(r["event_id"] == event["event_id"] for r in self.reviews):
+            raise OverrideRefused("this finding was already reviewed")
+        review = {"review_id": str(uuid.uuid4()), "event_id": event["event_id"], "resolution": "FALSE_POSITIVE",
+                  "reviewer_ref": reviewer_ref, "comment": comment, "reviewed_at": self.clock()}
+        self.reviews.append(review)
+        if note_status is not None:
+            self._note_by_id(report["note_id"])["pipeline_status"] = note_status
+        return {"review_id": review["review_id"], "event_id": event["event_id"],
+                "note_id": report["note_id"], "reviewed_at": review["reviewed_at"]}
 
     def stream_finish(self, *, note_id, note_sha256, char_length, claim_count, pipeline_status, stage):
         """Sets the real hash (unless the same text was already audited for this patient), status, and final trace."""

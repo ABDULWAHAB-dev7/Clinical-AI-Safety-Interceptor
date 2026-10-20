@@ -7,6 +7,7 @@ Auth runs before body validation, so an unauthenticated caller gets 401 and neve
 """
 
 import hashlib
+import hmac
 import re
 import uuid
 from typing import Literal, Optional
@@ -16,6 +17,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from interceptor.core.contracts import AtomicProposition, AttributionSpan, MedicalEntity, VerificationResult
+from interceptor.core.errors import PipelineError
+from interceptor.store.records import OverrideRefused
 
 from . import engine
 from .auth import authorize_patient, can_see_patient, require_scope
@@ -200,6 +203,66 @@ def audit(
     )
     return JSONResponse(view, status_code=201,
                         headers={"Location": f"/v1/interceptor/audit/reports/{view['report_id']}"})
+
+
+class OverrideRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    report_id: uuid.UUID
+    span_id: uuid.UUID
+    override_reason: str = Field(min_length=3, max_length=200)
+    attending_signature: str = Field(min_length=3, max_length=200)
+
+
+OVERRIDE_BLOCKING_STATUS = "BLOCKED"
+OVERRIDDEN_STATUS = "OVERRIDDEN_BY_CLINICIAN"
+
+
+@router.post("/override", dependencies=[require_scope("override")])
+def override(body: OverrideRequest, request: Request):
+    """A clinician reviews one flagged span in a report. The review is appended, never edited (API.md override, 2026-10-20).
+
+    It records a FALSE_POSITIVE review for that finding. A BLOCKED note moves to OVERRIDDEN_BY_CLINICIAN, and a note
+    that only has warnings keeps its status. The reason is stored as a hash. The signature is a self-asserted string, so
+    the reviewer reference is a pseudonym of it, not a verified identity.
+    """
+    state = request.app.state
+    report = _store_call(state.store.get_report, str(body.report_id))
+    if report is None or not can_see_patient(request, report["patient_pseudo_id"]):
+        raise InterceptionError("REPORT_NOT_FOUND", "The report is unknown or not visible to the caller.", "report_id")
+    authorize_patient(request, report["patient_pseudo_id"])
+
+    payload = report["payload"]
+    span = next((s for s in payload["attribution"] if s["span_id"] == str(body.span_id)), None)
+    if span is None or span.get("claim_id") is None:
+        raise InterceptionError("OVERRIDE_NOT_ALLOWED", "The span is not in this report.", "span_id")
+    event = next((e for e in report["events"] if e["claim_id"] == span["claim_id"]), None)
+    if event is None or event["risk_severity"] not in ("WARNING", "CRITICAL"):
+        raise InterceptionError("OVERRIDE_NOT_ALLOWED", "This span has no finding to override.", "span_id")
+
+    blocked = payload["pipeline_status"] == OVERRIDE_BLOCKING_STATUS
+    note_status = OVERRIDDEN_STATUS if blocked else None
+    key = state.pseudo_key
+    reviewer_ref = "rev_" + hmac.new(key, body.attending_signature.strip().lower().encode("utf-8"),
+                                     hashlib.sha256).hexdigest()[:16]
+    reason_hash = hashlib.sha256(body.override_reason.strip().encode("utf-8")).hexdigest()
+    client_hash = hmac.new(key, str(request.state.client_id).encode("utf-8"), hashlib.sha256).hexdigest()[:16]
+    comment = f"reason_sha256={reason_hash};client={client_hash}"
+    try:
+        recorded = state.store.record_override(report_id=str(body.report_id), claim_id=span["claim_id"],
+                                               reviewer_ref=reviewer_ref, comment=comment, note_status=note_status)
+    except OverrideRefused as exc:
+        raise InterceptionError("OVERRIDE_NOT_ALLOWED", str(exc), "span_id")
+    except PipelineError:
+        raise InterceptionError("AUDIT_WRITE_FAILED", "The audit store is unavailable. No content was released.")
+    return JSONResponse({
+        "override_id": recorded["review_id"],
+        "report_id": str(body.report_id),
+        "span_id": str(body.span_id),
+        "event_id": recorded["event_id"],
+        "note_id": recorded["note_id"],
+        "pipeline_status": note_status or payload["pipeline_status"],
+        "reviewed_at": iso(recorded["reviewed_at"]),
+    }, status_code=201, headers={"Location": f"/v1/interceptor/audit/reports/{body.report_id}"})
 
 
 @router.get("/notes/{note_id}", dependencies=[require_scope("read")])

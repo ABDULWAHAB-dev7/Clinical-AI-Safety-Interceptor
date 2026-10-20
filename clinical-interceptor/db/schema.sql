@@ -32,7 +32,7 @@ CREATE TABLE intercepted_notes (
     char_length        integer       NOT NULL CHECK (char_length >= 0),
     claim_count        integer       NOT NULL DEFAULT 0 CHECK (claim_count >= 0),
     pipeline_status    text          NOT NULL DEFAULT 'RECEIVED'
-        CHECK (pipeline_status IN ('RECEIVED', 'VERIFIED', 'BLOCKED', 'RELEASED', 'FAILED')),
+        CHECK (pipeline_status IN ('RECEIVED', 'VERIFIED', 'BLOCKED', 'RELEASED', 'FAILED', 'OVERRIDDEN_BY_CLINICIAN')),  -- override 2026-10-20
     received_at        timestamptz   NOT NULL DEFAULT now(),
     completed_at       timestamptz,
     CONSTRAINT uq_note_per_patient UNIQUE (patient_pseudo_id, note_sha256),

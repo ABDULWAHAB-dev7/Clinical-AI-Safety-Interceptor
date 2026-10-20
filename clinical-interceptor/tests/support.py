@@ -27,7 +27,8 @@ PRIVATE_PEM = _KEY.private_bytes(
 PUBLIC_PEM = _KEY.public_key().public_bytes(
     serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
 ).decode("ascii")
-ALL_SCOPES = "interceptor:intercept interceptor:decompose interceptor:verify interceptor:audit:write interceptor:read"
+ALL_SCOPES = ("interceptor:intercept interceptor:decompose interceptor:verify interceptor:audit:write interceptor:read "
+              "interceptor:override")
 
 
 def make_token(scope=ALL_SCOPES, *, lifetime=600, aud="clinical-interceptor", key=None, issued_at=None):

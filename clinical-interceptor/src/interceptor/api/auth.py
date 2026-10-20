@@ -24,6 +24,7 @@ SCOPES = {
     "verify": "interceptor:verify",
     "audit_write": "interceptor:audit:write",
     "read": "interceptor:read",
+    "override": "interceptor:override",  # clinician override (docs/api-changes/2026-10-20-override.md)
 }
 
 

@@ -47,6 +47,7 @@ CODES = {
     "INTERCEPT_UPSTREAM_TIMEOUT": CodeSpec(504, "BLOCKED", True),
     "INTERCEPT_VERIFIER_UNAVAILABLE": CodeSpec(503, "BLOCKED", True),
     "AUDIT_WRITE_FAILED": CodeSpec(503, "BLOCKED", True),
+    "OVERRIDE_NOT_ALLOWED": CodeSpec(409, "NONE", False),  # override: nothing blocked or flagged, or already overridden
 }
 
 

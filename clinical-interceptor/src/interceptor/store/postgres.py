@@ -10,7 +10,7 @@ from psycopg.types.json import Jsonb
 
 from interceptor.core.errors import ErrorClass, PipelineError
 from interceptor.paths import PROJECT_ROOT
-from interceptor.store.records import IDEMPOTENCY_TTL_SECONDS, AuditRefs, NoteRegistration, RecordRefs
+from interceptor.store.records import IDEMPOTENCY_TTL_SECONDS, AuditRefs, NoteRegistration, OverrideRefused, RecordRefs
 
 SCHEMA_PATH = PROJECT_ROOT / "db" / "schema.sql"
 
@@ -371,6 +371,38 @@ class PostgresAuditStore:
                 trace_id = _add_stage(conn, note_id, patient, stage)
                 ids = {e.claim_id: str(_add_event_record(conn, trace_id, note_id, patient, e)[0]) for e in events}
                 return str(trace_id), ids
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+
+    def record_override(self, *, report_id, claim_id, reviewer_ref, comment, note_status=None):
+        """One transaction: the FALSE_POSITIVE review (append-only) and, if given, the note status."""
+        try:
+            with self._connect() as conn:
+                found = conn.execute(
+                    """
+                    SELECT e.event_id, e.note_id FROM hallucination_events e
+                    JOIN audit_traces t ON t.trace_id = e.trace_id
+                    WHERE t.stage = 'ATTRIBUTE' AND t.output_payload->>'report_id' = %s AND e.claim_id = %s
+                    """,
+                    (report_id, claim_id),
+                ).fetchone()
+                if found is None:
+                    raise OverrideRefused("no finding for this span in the report")
+                event_id, note_id = found
+                if conn.execute("SELECT 1 FROM hallucination_reviews WHERE event_id = %s LIMIT 1", (event_id,)).fetchone():
+                    raise OverrideRefused("this finding was already reviewed")
+                review = conn.execute(
+                    """
+                    INSERT INTO hallucination_reviews (event_id, resolution, reviewer_ref, comment)
+                    VALUES (%s, 'FALSE_POSITIVE', %s, %s) RETURNING review_id, reviewed_at
+                    """,
+                    (event_id, reviewer_ref, comment),
+                ).fetchone()
+                if note_status is not None:
+                    conn.execute("UPDATE intercepted_notes SET pipeline_status = %s WHERE note_id = %s",
+                                 (note_status, note_id))
+                return {"review_id": str(review[0]), "event_id": str(event_id), "note_id": str(note_id),
+                        "reviewed_at": review[1]}
         except psycopg.Error as exc:
             raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
 
