@@ -48,6 +48,7 @@ class StreamSession:
         self.actions = []
         self.severities = []
         self.claim_count = 0
+        self.first_release_ms = None  # time to the first released chunk (API 4.5)
         self.upstream_finish = None
         self.failed = False
         self.finished = False
@@ -144,6 +145,8 @@ class StreamSession:
             "doc_char_end": unit.end, "claim_ids": claim_ids, "risk_severity": shown_severity,
             "action": released_as})
         body = marker_for(action, verdict.severity) or self.text[unit.start:unit.end]
+        if self.first_release_ms is None:
+            self.first_release_ms = int((time.monotonic() - self.started) * 1000)
         yield self._chunk({"content": self.text[self.cursor:unit.start] + body})
 
         self.cursor = unit.end
@@ -172,7 +175,8 @@ class StreamSession:
         yield self._chunk({}, reason)
         yield sse("interception", {
             "type": "stream.complete", "status": status, "note_id": self.note_id, "trace_id": trace_id,
-            "overall_risk_severity": overall, "interception_time_ms": elapsed})
+            "overall_risk_severity": overall, "interception_time_ms": elapsed,
+            "first_release_ms": self.first_release_ms})
         yield DONE
 
     async def _abandon(self, pipeline_status):
