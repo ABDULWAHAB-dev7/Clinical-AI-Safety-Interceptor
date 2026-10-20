@@ -7,6 +7,7 @@ The repository never updates or deletes audit rows; the database triggers reject
 
 import psycopg
 from psycopg.types.json import Jsonb
+from psycopg_pool import ConnectionPool
 
 from interceptor.core.errors import ErrorClass, PipelineError
 from interceptor.paths import PROJECT_ROOT
@@ -120,12 +121,21 @@ def upsert_note(conn, *, patient_pseudo_id, encounter_pseudo_id, source_system, 
 class PostgresAuditStore:
     """Writes one request's records in a single transaction. Any database error is AUDIT_WRITE_FAILURE."""
 
-    def __init__(self, dsn, connect_timeout=3):
+    def __init__(self, dsn, connect_timeout=3, pool_size=4):
+        # A pool, not a connection per call: a remote database (for example a hosted one) can cost over a second to
+        # connect, and one request makes several store calls.
         self.dsn = dsn
         self.connect_timeout = connect_timeout
+        self._pool = ConnectionPool(dsn, min_size=1, max_size=pool_size, timeout=connect_timeout + 3,
+                                    kwargs={"connect_timeout": connect_timeout}, open=True)
 
     def _connect(self):
-        return psycopg.connect(self.dsn, connect_timeout=self.connect_timeout)
+        # Used as `with self._connect() as conn:`, which commits on success and rolls back on any exception,
+        # as psycopg.connect did.
+        return self._pool.connection()
+
+    def close(self):
+        self._pool.close()
 
     def ping(self):
         try:

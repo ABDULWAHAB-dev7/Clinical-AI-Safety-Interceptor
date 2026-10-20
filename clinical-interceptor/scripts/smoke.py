@@ -81,6 +81,7 @@ def main():
     parser.add_argument("--base", default="https://127.0.0.1:8443")
     parser.add_argument("--certs", default=str(ROOT / "seed" / "certs"))
     parser.add_argument("--pseudo-key", required=True, help="the server's INTERCEPTOR_PSEUDO_KEY")
+    parser.add_argument("--timeout", type=float, default=60.0, help="seconds per request; remote databases are slower")
     args = parser.parse_args()
     certs = Path(args.certs)
     ca = str(certs / "ca.pem")
@@ -96,12 +97,12 @@ def main():
     except httpx.TransportError:
         check(True, "a connection with no client certificate is refused at the TLS handshake")
 
-    with httpx.Client(base_url=args.base, verify=tls_context(ca, unregistered)) as client:
+    with httpx.Client(base_url=args.base, verify=tls_context(ca, unregistered), timeout=args.timeout) as client:
         r = client.post("/v1/interceptor/verify", json={}, headers=bearer)
         check(r.status_code == 403 and r.json()["error"]["code"] == "AUTH_MTLS_REQUIRED",
               "a CA-signed but unregistered certificate gets 403 AUTH_MTLS_REQUIRED")
 
-    with httpx.Client(base_url=args.base, verify=tls_context(ca, registered)) as client:
+    with httpx.Client(base_url=args.base, verify=tls_context(ca, registered), timeout=args.timeout) as client:
         check(client.get("/v1/health").json() == {"status": "ok"}, "health answers with a registered certificate")
         r = client.post("/v1/interceptor/verify", json={})
         check(r.status_code == 401, "a registered certificate with no bearer token gets 401")
