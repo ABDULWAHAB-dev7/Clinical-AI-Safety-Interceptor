@@ -8,4 +8,4 @@ benchmark/corpus/mimic/
 data/
 
 # NLI checkpoints (PLAN 4.1): downloaded locally, never committed. The lock file is committed separately.
-models/
+models/nli/*/

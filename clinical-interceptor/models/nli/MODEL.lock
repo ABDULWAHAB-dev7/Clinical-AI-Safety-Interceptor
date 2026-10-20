@@ -1,0 +1,5 @@
+{
+  "model": "cross-encoder/nli-deberta-v3-base",
+  "license": "apache-2.0 (model card)",
+  "sha256": "435ef41d24f6b5d36bdc5d4d1b4c7bbb70b07ce55a1178547d16455ae05f6701"
+}
