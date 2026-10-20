@@ -1,0 +1,122 @@
+[
+ {
+  "id": 1,
+  "category": "discharge",
+  "title": "2590-CHF & Pleural Effusion - Discharge Summary",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=89-Discharge+Summary&Sample=2590-CHF+%26+Pleural+Effusion+-+Discharge+Summary"
+ },
+ {
+  "id": 2,
+  "category": "discharge",
+  "title": "1254-Abscess with Cellulitis - Discharge Summary",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=89-Discharge+Summary&Sample=1254-Abscess+with+Cellulitis+-+Discharge+Summary"
+ },
+ {
+  "id": 3,
+  "category": "discharge",
+  "title": "2193-Cholecystitis - Discharge Summary",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=89-Discharge+Summary&Sample=2193-Cholecystitis+-+Discharge+Summary"
+ },
+ {
+  "id": 4,
+  "category": "discharge",
+  "title": "1295-Bronchiolitis - Discharge Summary",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=89-Discharge+Summary&Sample=1295-Bronchiolitis+-+Discharge+Summary"
+ },
+ {
+  "id": 5,
+  "category": "discharge",
+  "title": "2209-Cardiac Transfer Summary",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=89-Discharge+Summary&Sample=2209-Cardiac+Transfer+Summary"
+ },
+ {
+  "id": 6,
+  "category": "discharge",
+  "title": "646-Cardio/Pulmo Discharge Summary",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=89-Discharge+Summary&Sample=646-Cardio%2FPulmo+Discharge+Summary"
+ },
+ {
+  "id": 7,
+  "category": "discharge",
+  "title": "2618-Chronic Abscesses - Discharge Summary",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=89-Discharge+Summary&Sample=2618-Chronic+Abscesses+-+Discharge+Summary"
+ },
+ {
+  "id": 8,
+  "category": "discharge",
+  "title": "2486-Chest Pain & Respiratory Insufficiency",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=89-Discharge+Summary&Sample=2486-Chest+Pain+%26+Respiratory+Insufficiency"
+ },
+ {
+  "id": 9,
+  "category": "soap",
+  "title": "2287-Acquired Hypothyroidism Followup",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=91-SOAP+%2F+Chart+%2F+Progress+Notes&Sample=2287-Acquired+Hypothyroidism+Followup"
+ },
+ {
+  "id": 10,
+  "category": "soap",
+  "title": "1873-Anemia & Leukemia Followup",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=91-SOAP+%2F+Chart+%2F+Progress+Notes&Sample=1873-Anemia+%26+Leukemia+Followup"
+ },
+ {
+  "id": 11,
+  "category": "soap",
+  "title": "288-Acne - SOAP",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=91-SOAP+%2F+Chart+%2F+Progress+Notes&Sample=288-Acne+-+SOAP"
+ },
+ {
+  "id": 12,
+  "category": "soap",
+  "title": "386-Allergic Rhinitis",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=91-SOAP+%2F+Chart+%2F+Progress+Notes&Sample=386-Allergic+Rhinitis"
+ },
+ {
+  "id": 13,
+  "category": "soap",
+  "title": "227-Diabetes Mellitus - SOAP Note - 1",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=91-SOAP+%2F+Chart+%2F+Progress+Notes&Sample=227-Diabetes+Mellitus+-+SOAP+Note+-+1"
+ },
+ {
+  "id": 14,
+  "category": "medicine",
+  "title": "1921-Abdominal Pain - Consult",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=98-General+Medicine&Sample=1921-Abdominal+Pain+-+Consult"
+ },
+ {
+  "id": 15,
+  "category": "medicine",
+  "title": "963-Acute Cystitis & Diabetes Type II",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=98-General+Medicine&Sample=963-Acute+Cystitis+%26+Diabetes+Type+II"
+ },
+ {
+  "id": 16,
+  "category": "medicine",
+  "title": "1152-Admission History & Physical - Nausea",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=98-General+Medicine&Sample=1152-Admission+History+%26+Physical+-+Nausea"
+ },
+ {
+  "id": 17,
+  "category": "cardio",
+  "title": "45-2-D Echocardiogram - 1",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=6-Cardiovascular+%2F+Pulmonary&Sample=45-2-D+Echocardiogram+-+1"
+ },
+ {
+  "id": 18,
+  "category": "cardio",
+  "title": "245-2-D Echocardiogram - 2",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=6-Cardiovascular+%2F+Pulmonary&Sample=245-2-D+Echocardiogram+-+2"
+ },
+ {
+  "id": 19,
+  "category": "medicine",
+  "title": "2166-Air Under Diaphragm - Consult",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=98-General+Medicine&Sample=2166-Air+Under+Diaphragm+-+Consult"
+ },
+ {
+  "id": 20,
+  "category": "medicine",
+  "title": "1843-Anemia - Consult",
+  "url": "https://www.mtsamples.com/site/pages/sample.asp?Type=98-General+Medicine&Sample=1843-Anemia+-+Consult"
+ }
+]

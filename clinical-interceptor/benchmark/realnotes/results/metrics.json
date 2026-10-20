@@ -1,0 +1,52 @@
+{
+  "documents": {
+    "clean": 20,
+    "injected": 20
+  },
+  "blocking_document_level": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 20,
+    "tn": 20,
+    "precision": null,
+    "recall": 0.0,
+    "f1": null
+  },
+  "flagging_claim_level": {
+    "tp": 19,
+    "fp": 2356,
+    "fn": 0,
+    "tn": 0,
+    "precision": 0.008,
+    "recall": 1.0,
+    "f1": 0.015873015873015872
+  },
+  "false_positive_block_rate": 0.0,
+  "fail_closed_documents": {
+    "clean": 1,
+    "injected": 1
+  },
+  "per_injection_type": {
+    "fabricated_history": {
+      "injected": 20,
+      "critical": 0,
+      "warning": 19,
+      "safe": 0,
+      "no_claim": 1
+    }
+  },
+  "not_evaluated": [
+    {
+      "type": "dosing_frequency",
+      "reason": "needs a record that states the medication and its frequency"
+    },
+    {
+      "type": "beta_lactam_cross_reactivity",
+      "reason": "needs a documented penicillin allergy in the record"
+    },
+    {
+      "type": "allergy_denial",
+      "reason": "needs a documented allergy in the record"
+    }
+  ]
+}
