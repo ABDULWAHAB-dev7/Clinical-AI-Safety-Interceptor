@@ -1,11 +1,17 @@
-# Local PostgreSQL for development and the DB tests. Bound to loopback only; the credentials are throwaway dev values.
-# Not verified here: Docker was not available on the build machine.
+# Local stack: PostgreSQL 18 and the interceptor API. Migrations run when the API container starts.
+#
+#   cp .env.example .env        # then set INTERCEPTOR_PSEUDO_KEY (32+ random characters)
+#   docker compose up --build
+#
+# Published on 127.0.0.1 only. Clinical endpoints also need the client-certificate headers from a trusted proxy
+# (API 2.1), so this stack serves the health and unauthenticated routes on its own. Use scripts/dev_server.py for
+# the full mTLS path.
 services:
-  postgres:
-    image: postgres:15
+  db:
+    image: postgres:18
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: dev-only-password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev-only-password}
       POSTGRES_DB: interceptor
     ports:
       - "127.0.0.1:5432:5432"
@@ -14,7 +20,19 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d interceptor"]
       interval: 5s
-      retries: 10
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      INTERCEPTOR_DATABASE_URL: "host=db port=5432 dbname=interceptor user=postgres password=${POSTGRES_PASSWORD:-dev-only-password}"
+      INTERCEPTOR_PSEUDO_KEY: ${INTERCEPTOR_PSEUDO_KEY:?set INTERCEPTOR_PSEUDO_KEY in .env}
+      INTERCEPTOR_TRUSTED_PROXIES: "127.0.0.1"
+    ports:
+      - "127.0.0.1:8000:8000"
 
 volumes:
   pgdata:

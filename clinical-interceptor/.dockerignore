@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+models
+benchmark
+web
+tests
+docs
+seed
+scripts
+tools
+examples
+.env
+.env.*
