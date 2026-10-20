@@ -1,8 +1,15 @@
 name: ci
 
+# GitHub reads workflows only from the repository root, so this file lives here and runs the project in
+# clinical-interceptor/.
+
 on:
   push:
   pull_request:
+
+defaults:
+  run:
+    working-directory: clinical-interceptor
 
 jobs:
   checks:
@@ -13,7 +20,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r requirements-dev.txt
+      - name: install
+        run: pip install -r requirements-dev.txt
       - name: ruff
         run: ruff check .
       - name: mypy (core modules; strict mode is not enforced yet)
@@ -43,7 +51,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r requirements-dev.txt
+      - name: install
+        run: pip install -r requirements-dev.txt
       - name: create the test database
         run: PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE interceptor_test"
       - name: database tests
