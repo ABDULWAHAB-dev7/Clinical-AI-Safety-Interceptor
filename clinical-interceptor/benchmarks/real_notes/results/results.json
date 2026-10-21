@@ -5,32 +5,32 @@
     "claims_clean": 87,
     "flagging": {
       "tp": 8,
-      "fp": 75,
+      "fp": 74,
       "fn": 0,
-      "precision": 0.0963855421686747,
+      "precision": 0.0975609756097561,
       "recall": 1.0,
-      "f1": 0.17582417582417584
+      "f1": 0.17777777777777778
     },
     "blocking_claim": {
       "tp": 4,
-      "fp": 2,
+      "fp": 0,
       "fn": 0,
-      "precision": 0.6666666666666666,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1": 0.8
+      "f1": 1.0
     },
     "blocking_document": {
       "tp": 4,
-      "fp": 1,
+      "fp": 0,
       "fn": 0,
-      "precision": 0.8,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1": 0.8888888888888888
+      "f1": 1.0
     },
-    "clean_flagged": 75,
+    "clean_flagged": 74,
     "clean_flagged_medication": 6,
     "clean_medication_total": 6,
-    "clean_blocked": 2,
+    "clean_blocked": 0,
     "seeded": [
       {
         "case": "case-04",
@@ -131,7 +131,7 @@
     ],
     "documents": 10,
     "documents_expected_block": 4,
-    "documents_blocked": 5,
+    "documents_blocked": 4,
     "fail_closed": 0
   },
   "cases": [
@@ -255,9 +255,9 @@
           "claim_id": "clm_78a5ab70b805",
           "claim_text": "A: Type 2 diabetes mellitus, not at goal",
           "char_start": 347,
-          "severity": "CRITICAL",
-          "rule": "contradiction_high_risk",
-          "nli_class": "CONTRADICTION",
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
           "medication": false,
           "seeded": null,
           "expected": null,
@@ -811,8 +811,8 @@
           "claim_id": "clm_6aac879cfd9f",
           "claim_text": "Tension-type headache, most likely",
           "char_start": 354,
-          "severity": "CRITICAL",
-          "rule": "contradiction_high_risk",
+          "severity": "WARNING",
+          "rule": "contradiction",
           "nli_class": "CONTRADICTION",
           "medication": false,
           "seeded": null,

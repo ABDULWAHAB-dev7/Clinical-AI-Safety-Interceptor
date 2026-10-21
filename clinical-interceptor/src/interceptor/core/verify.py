@@ -10,6 +10,11 @@ Classification branches, in order. The first that applies sets the NLI class:
 
 The severity policy then sets risk_severity and risk_rule. The NLI class is never changed by a rule.
 Every result is validated against core.contracts.VerificationResult; an inconsistent result fails closed.
+
+Negation (validation 2026-10-21): a negation cue governs an entity only when it comes before the entity in the same
+clause, so "Type 2 diabetes, not at goal" keeps the diagnosis affirmed.
+NLI contradictions (validation 2026-10-21): a contradiction can raise severity by its high-risk kind only when the
+candidate was matched by a code, an allergy concept, or a drug class. A match on shared words alone stays a WARNING.
 """
 
 import re
@@ -34,6 +39,8 @@ from .severity import ClaimFacts, classify_risk
 
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+CLAUSE_BOUNDARY = re.compile(r"[,;:.!?]")
+CODED_REASONS = frozenset({"code", "allergy_concept", "drug_class"})
 
 
 class NliScorer(Protocol):
@@ -98,14 +105,14 @@ def verify_claim(claim: dict[str, Any], triples: Sequence[Triple], knowledge: Kn
     allergy_entities = [e for e in entities if e.system is CodeSystem.SNOMED_CT
                         and e.code in knowledge.allergy_concept_codes]
     coded = [e for e in entities if e not in rx and e not in allergy_entities]
-    negated = NEGATION.search(text) is not None
+    allergy_negated = any(_negation_governs(text, e) for e in allergy_entities)
 
     if rx:
         decision = _medication(text, rx, allergy_triples, knowledge, trace)
     elif allergy_entities:
-        decision = _allergy_concept(allergy_triples, negated)
+        decision = _allergy_concept(allergy_triples, allergy_negated)
     else:
-        coded_decision = _coded_match(text, coded, triples, knowledge, negated)
+        coded_decision = _coded_match(text, coded, triples, knowledge)
         if coded_decision is not None:
             decision = coded_decision
         elif candidates:
@@ -140,6 +147,15 @@ def verify_claim(claim: dict[str, Any], triples: Sequence[Triple], knowledge: Kn
     return result.model_dump(mode="json"), trace
 
 
+def _negation_governs(text: str, entity: Entity) -> bool:
+    """A negation cue governs an entity only when it comes before the entity, in the same clause."""
+    position = text.lower().find(entity.surface_text.lower())
+    if position < 0:
+        return False
+    clause = CLAUSE_BOUNDARY.split(text[:position])[-1]
+    return NEGATION.search(clause) is not None
+
+
 def _medication(text: str, rx: Sequence[Entity], allergy_triples: Sequence[Triple], knowledge: Knowledge,
                 trace: dict[str, Any]) -> Decision:
     classes = {knowledge.ingredient_classes.get(e.code) for e in rx} - {None}
@@ -169,14 +185,14 @@ def _allergy_concept(allergy_triples: Sequence[Triple], negated: bool) -> Decisi
     return Decision(NLIClass.ENTAILMENT, 1.0, ref, "allergy_documented")
 
 
-def _coded_match(text: str, coded: Sequence[Entity], triples: Sequence[Triple], knowledge: Knowledge,
-                 negated: bool) -> Optional[Decision]:
+def _coded_match(text: str, coded: Sequence[Entity], triples: Sequence[Triple], knowledge: Knowledge) -> Optional[Decision]:
     for entity in sorted(coded, key=lambda e: e.char_start):
         matches = sorted((t for t in triples if t.object_code == entity.code and t.object_system is entity.system),
                          key=lambda t: t.source_ref)
         if not matches:
             continue
         triple = matches[0]
+        negated = _negation_governs(text, entity)
         if triple.predicate == "HAS_CONDITION":
             if negated:
                 kinds = frozenset({"active_diagnosis"}) if triple.status == "active" else frozenset()
@@ -216,9 +232,12 @@ def _nli(claim_id: str, text: str, candidates: Sequence[Candidate], knowledge: K
             best = (entailment, neutral, contra, candidate)
     if contradiction is not None:
         contra, candidate = contradiction
-        kinds = {"allergy"} if candidate.triple.predicate == "HAS_ALLERGY" else (
-            {"active_diagnosis"} if candidate.triple.predicate == "HAS_CONDITION"
-            and candidate.triple.status == "active" else set())
+        corroborated = bool(CODED_REASONS & set(candidate.reasons))  # shared words alone never raise severity
+        kinds: set[str] = set()
+        if corroborated:
+            kinds = {"allergy"} if candidate.triple.predicate == "HAS_ALLERGY" else (
+                {"active_diagnosis"} if candidate.triple.predicate == "HAS_CONDITION"
+                and candidate.triple.status == "active" else set())
         return Decision(NLIClass.CONTRADICTION, contra, candidate.triple.source_ref, "nli_contradiction",
                         frozenset(kinds))
     if best is None:  # candidates is never empty here (verify_claim checks it); fail closed if that ever changes

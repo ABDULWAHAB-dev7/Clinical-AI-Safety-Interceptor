@@ -32,20 +32,24 @@ certificates.
 
 ## Findings
 
-These came out of the first full run. They are not fixed in this milestone, because each fix changes verifier behaviour.
+The first full run found two false blocks. Both are fixed in `core/verify.py` and covered by
+`tests/unit/test_verify_scope.py`. The change is recorded in `docs/policy-changes/2026-10-21-negation-nli-scope.md`.
 
-1. **Negation is scoped to the whole sentence.** "A: Type 2 diabetes mellitus, not at goal" (case 01, a clean statement)
-   was blocked as a denial of diabetes. The `not` belongs to "at goal", but the verifier reads it as negating the
-   diagnosis. This is a false block on a correct statement.
-2. **A high-confidence NLI contradiction blocks an unrelated statement.** "Tension-type headache, most likely" (case 05)
-   was blocked. The NLI model returned CONTRADICTION against the active diabetes triple, and because the triple is an
-   active diagnosis, the severity rule made it CRITICAL. The same kind of false contradiction was seen earlier with
-   "Blood pressure is stable."
-3. **Every unsupported statement is a WARNING.** 70 of 87 clean claims carry `unsupported_clinical`, because the chart has
-   no entry for them. Flagging is therefore almost all noise. This follows the rule that NEUTRAL gives a WARNING, but
-   it means a clinician would see a warning on most sentences.
-4. **Medication statements are always NEUTRAL.** The FHIR subset has no medication facts, so every medication sentence is
-   flagged, including correct ones.
+1. **Negation was scoped to the whole sentence (fixed).** "A: Type 2 diabetes mellitus, not at goal" (case 01, a clean
+   statement) was blocked as a denial of diabetes. A negation cue now governs an entity only when it comes before the
+   entity in the same clause.
+2. **A shared-word NLI contradiction blocked an unrelated statement (fixed).** "Tension-type headache, most likely"
+   (case 05) was blocked, because the NLI model returned a high-confidence contradiction against the diabetes entry, and
+   the severity rule escalated it because the entry is an active diagnosis. A contradiction now escalates by kind only
+   when the candidate was matched by a code, an allergy concept, or a drug class.
+3. **Every unsupported statement is a WARNING (open).** About 70 of 87 clean claims carry `unsupported_clinical`, because
+   the chart has no entry for them. This follows the rule that NEUTRAL gives a WARNING. It is not changed, but it means a
+   clinician would see a warning on most sentences.
+4. **Medication statements are always NEUTRAL (open).** The FHIR subset has no medication facts, so every medication
+   sentence is flagged, including correct ones.
+
+After the fixes, blocking has no false blocks on this set (4 of 4 seeded blocks caught), and all 8 seeded errors are still
+caught at WARNING or CRITICAL as before. The sample is 10 notes, so this is not evidence of accuracy beyond this set.
 
 ## Not evaluated
 
