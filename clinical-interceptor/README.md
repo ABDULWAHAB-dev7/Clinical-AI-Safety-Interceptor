@@ -36,7 +36,7 @@ Python 3.11+ (tested on 3.12).
 
 ```bash
 pip install -r requirements.txt
-python -m unittest discover -s tests -t .          # database tests skip without INTERCEPTOR_TEST_DSN
+pytest          # database tests skip without INTERCEPTOR_TEST_DSN
 ```
 
 To run the service, see "Run it for real (local)" in the API section. It needs a migrated PostgreSQL database, the
@@ -104,7 +104,7 @@ Use a disposable database. The DB tests drop and recreate its `public` schema.
 
 ```bash
 createdb -h 127.0.0.1 -p 55432 -U postgres interceptor_test
-INTERCEPTOR_TEST_DSN="host=127.0.0.1 port=55432 dbname=interceptor_test user=postgres" python -m unittest discover -s tests -t .
+INTERCEPTOR_TEST_DSN="host=127.0.0.1 port=55432 dbname=interceptor_test user=postgres" pytest
 python tools/seed_check.py
 ```
 

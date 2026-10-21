@@ -12,7 +12,7 @@ PID_PATTERN = re.compile(r"^pid_[0-9a-f]{64}$")
 EID_PATTERN = re.compile(r"^eid_[0-9a-f]{64}$")
 
 
-def _pseudonymize(prefix, value, key):
+def _pseudonymize(prefix: str, value: str, key: bytes | bytearray) -> str:
     if not isinstance(key, (bytes, bytearray)) or len(key) < 16:
         raise ValueError("pseudonymization key must be at least 16 bytes")
     normalized = value.strip().upper()
@@ -22,9 +22,9 @@ def _pseudonymize(prefix, value, key):
     return f"{prefix}_{digest}"
 
 
-def patient_pseudo_id(mrn, key):
+def patient_pseudo_id(mrn: str, key: bytes | bytearray) -> str:
     return _pseudonymize("pid", mrn, key)
 
 
-def encounter_pseudo_id(encounter_identifier, key):
+def encounter_pseudo_id(encounter_identifier: str, key: bytes | bytearray) -> str:
     return _pseudonymize("eid", encounter_identifier, key)

@@ -13,7 +13,7 @@ defaults:
 
 jobs:
   checks:
-    name: ruff, mypy (core), unit tests
+    name: ruff, mypy --strict (core), pytest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,10 +24,11 @@ jobs:
         run: pip install -r requirements-dev.txt
       - name: ruff
         run: ruff check .
-      - name: mypy (core modules; strict mode is not enforced yet)
-        run: mypy src/interceptor/core
-      - name: unit tests (database tests skip without INTERCEPTOR_TEST_DSN)
-        run: python -m unittest discover -s tests -t .
+      # store/ and fhir/ are not annotated yet, so mypy follows them silently. core/ is checked strictly.
+      - name: mypy --strict (core)
+        run: mypy --strict --follow-imports=silent src/interceptor/core
+      - name: pytest (database tests skip without INTERCEPTOR_TEST_DSN)
+        run: pytest
 
   database:
     name: database tests against PostgreSQL 18
@@ -56,4 +57,4 @@ jobs:
       - name: create the test database
         run: PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE interceptor_test"
       - name: database tests
-        run: python -m unittest discover -s tests -t .
+        run: pytest

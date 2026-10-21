@@ -24,8 +24,8 @@ class ClaimFacts:
     entity_kinds: frozenset[str] = frozenset()
 
 
-def classify_risk(facts: ClaimFacts, entailment_floor=ENTAILMENT_CONFIDENCE_FLOOR,
-                  contradiction_critical_min=CONTRADICTION_CRITICAL_MIN) -> tuple[RiskSeverity, Optional[str]]:
+def classify_risk(facts: ClaimFacts, entailment_floor: float = ENTAILMENT_CONFIDENCE_FLOOR,
+                  contradiction_critical_min: float = CONTRADICTION_CRITICAL_MIN) -> tuple[RiskSeverity, Optional[str]]:
     """Deterministic rule violations (confidence 1.0) block. An NLI contradiction blocks only in a high-risk class and
     only above contradiction_critical_min; otherwise it is a warning (policy change record 2026-10-20)."""
     if facts.is_medication_claim and facts.matches_allergy:  # priority 1

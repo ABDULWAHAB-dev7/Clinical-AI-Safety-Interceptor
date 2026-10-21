@@ -9,7 +9,7 @@ Stage names follow the audit schema (DATABASE.md 3.1): INGEST, RETRIEVE, EXTRACT
 import hashlib
 import json
 import time
-from typing import Optional
+from typing import Any, Optional
 
 from interceptor.store.records import StageRecord
 
@@ -25,7 +25,8 @@ COMPONENTS = {
 }
 
 
-def stage_row(name, input_payload, output, status, error: Optional[str] = None, started=None):
+def stage_row(name: str, input_payload: object, output: dict[str, Any], status: str, error: Optional[str] = None,
+              started: Optional[float] = None) -> StageRecord:
     latency = None if started is None else int((time.monotonic() - started) * 1000)
     return StageRecord(
         stage=name,
@@ -39,5 +40,5 @@ def stage_row(name, input_payload, output, status, error: Optional[str] = None, 
     )
 
 
-def _digest(obj):
+def _digest(obj: object) -> str:
     return hashlib.sha256(json.dumps(obj, sort_keys=True, default=str).encode("utf-8")).hexdigest()

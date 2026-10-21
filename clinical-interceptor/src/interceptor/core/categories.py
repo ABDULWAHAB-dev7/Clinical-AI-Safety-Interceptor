@@ -18,11 +18,17 @@ Evaluated in order, the first match wins. This is the amended 7.1.2 (docs/api-ch
 the diagnosis is active, so this is an approximation.
 """
 
-from .contracts import AttributionClass, CodeSystem, NLIClass
+from collections.abc import Sequence
+from typing import Any, Optional
+
+from .contracts import AttributionClass, CodeSystem, NLIClass, VerificationResult
 from .dosage import parse_dose
+from .entities import Entity
+from .knowledge import Knowledge
 
 
-def hallucination_category(result, claim_text, entities, knowledge):
+def hallucination_category(result: VerificationResult, claim_text: str, entities: Sequence[Entity],
+                           knowledge: Knowledge) -> str:
     contradiction = result.nli_class is NLIClass.CONTRADICTION
     rx = [e for e in entities if e.system is CodeSystem.RXNORM]
     allergy_concept = any(
@@ -51,7 +57,7 @@ def hallucination_category(result, claim_text, entities, knowledge):
     return "OTHER"
 
 
-def classification_for(nli_class):
+def classification_for(nli_class: NLIClass) -> str:
     """Attribution classification generated from a result when the client supplies no spans."""
     return {
         NLIClass.ENTAILMENT: AttributionClass.SOURCE_SUPPORTED,
@@ -60,7 +66,7 @@ def classification_for(nli_class):
     }[nli_class].value
 
 
-def explanation(classification, result):
+def explanation(classification: str, result: Optional[dict[str, Any]]) -> str:
     """Server-generated, text-free explanation. Client explanations are not stored (DATABASE.md 3.6)."""
     ref = (result or {}).get("matched_fhir_ref")
     rule = (result or {}).get("risk_rule")

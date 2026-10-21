@@ -8,7 +8,8 @@ no entities, so nothing is invented.
 import re
 from dataclasses import dataclass
 
-from .contracts import CodeSystem
+from .contracts import CodeSystem, MedicalEntity
+from .knowledge import Knowledge
 
 
 @dataclass(frozen=True)
@@ -21,10 +22,10 @@ class Entity:
     char_end: int
 
 
-def link_entities(text, knowledge, offset=0):
+def link_entities(text: str, knowledge: Knowledge, offset: int = 0) -> list[Entity]:
     """Returns entities in document order. `offset` shifts local positions to positions in the full note."""
-    taken = []
-    found = []
+    taken: list[tuple[int, int]] = []
+    found: list[Entity] = []
     for entry in knowledge.lexicon:  # already longest surface first
         pattern = re.compile(r"(?<![\w-])" + re.escape(entry.surface) + r"(?![\w-])", re.IGNORECASE)
         for match in pattern.finditer(text):
@@ -36,6 +37,6 @@ def link_entities(text, knowledge, offset=0):
     return sorted(found, key=lambda e: (e.char_start, e.char_end))
 
 
-def entity_from_model(model):
+def entity_from_model(model: MedicalEntity) -> Entity:
     """Converts a validated core.contracts.MedicalEntity into an Entity."""
     return Entity(model.system, model.code, model.display, model.surface_text, model.char_start, model.char_end)

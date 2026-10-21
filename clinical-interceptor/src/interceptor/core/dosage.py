@@ -5,6 +5,9 @@ documented dose is out of scope: the FHIR subset in DATABASE.md section 1 has no
 """
 
 import re
+from typing import Optional
+
+from .knowledge import DoseLimit
 
 DOSE = re.compile(r"(\d+(?:\.\d+)?)\s*(mg|mcg|g)\b", re.IGNORECASE)
 FREQUENCIES = (
@@ -16,7 +19,7 @@ FREQUENCIES = (
 TO_MG = {"mg": 1.0, "g": 1000.0, "mcg": 0.001}
 
 
-def parse_dose(text):
+def parse_dose(text: str) -> tuple[Optional[float], Optional[int]]:
     """Returns (single_dose_mg, doses_per_day). Either may be None."""
     match = DOSE.search(text)
     single = float(match.group(1)) * TO_MG[match.group(2).lower()] if match else None
@@ -24,7 +27,7 @@ def parse_dose(text):
     return single, per_day
 
 
-def check_dose(text, limit):
+def check_dose(text: str, limit: DoseLimit) -> tuple[bool, Optional[float], Optional[str]]:
     """Returns (exceeded, limit_value, unit). limit_value is the limit that was exceeded, or None."""
     single, per_day = parse_dose(text)
     if single is not None and single > limit.max_single_mg:

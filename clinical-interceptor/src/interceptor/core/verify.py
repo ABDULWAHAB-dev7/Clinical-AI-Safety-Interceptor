@@ -14,30 +14,39 @@ Every result is validated against core.contracts.VerificationResult; an inconsis
 
 import re
 import uuid
+from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional, Protocol
 
 from pydantic import ValidationError
 
-from interceptor.fhir.triples import verbalize
+from interceptor.fhir.triples import Triple, verbalize
 
 from .contracts import CodeSystem, NLIClass, VerificationResult
 from .decompose import NEGATION
 from .dosage import check_dose
-from .entities import link_entities
-from .retrieval import retrieve
+from .entities import Entity, link_entities
+from .knowledge import Knowledge
+from .retrieval import Candidate, retrieve
 from .severity import ClaimFacts, classify_risk
 
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
 
 
+class NliScorer(Protocol):
+    """The NLI model the verifier calls: premise and hypothesis in, a probability per label out."""
+
+    def score(self, premise: str, hypothesis: str) -> Mapping[str, float]:
+        ...
+
+
 class VerificationError(Exception):
     """A claim cannot be verified. The caller must fail closed and never default a severity."""
 
-    def __init__(self, claim_id, reason):
+    def __init__(self, claim_id: str, reason: str) -> None:
         super().__init__(f"{claim_id}: {reason}")
         self.claim_id = claim_id
         self.reason = reason
@@ -49,18 +58,19 @@ class Decision:
     confidence: float
     ref: Optional[str]
     branch: str
-    kinds: frozenset = frozenset()
+    kinds: frozenset[str] = frozenset()
     is_medication: bool = False
     matches_allergy: bool = False
 
 
 @dataclass
 class VerifyOutcome:
-    results: list = field(default_factory=list)
-    traces: list = field(default_factory=list)
+    results: list[dict[str, Any]] = field(default_factory=list)
+    traces: list[dict[str, Any]] = field(default_factory=list)
 
 
-def verify_claims(claims, triples, knowledge, verifier_version, nli_model=None):
+def verify_claims(claims: Sequence[dict[str, Any]], triples: Sequence[Triple], knowledge: Knowledge,
+                  verifier_version: str, nli_model: Optional[NliScorer] = None) -> VerifyOutcome:
     outcome = VerifyOutcome()
     for claim in claims:
         result, trace = verify_claim(claim, triples, knowledge, verifier_version, nli_model)
@@ -69,12 +79,13 @@ def verify_claims(claims, triples, knowledge, verifier_version, nli_model=None):
     return outcome
 
 
-def verify_claim(claim, triples, knowledge, verifier_version, nli_model=None):
+def verify_claim(claim: dict[str, Any], triples: Sequence[Triple], knowledge: Knowledge, verifier_version: str,
+                 nli_model: Optional[NliScorer] = None) -> tuple[dict[str, Any], dict[str, Any]]:
     """claim: dict with claim_id, claim_text, and optional entities (list of core.entities.Entity)."""
     claim_id, text = claim["claim_id"], claim["claim_text"]
     entities = list(claim.get("entities") or link_entities(text, knowledge, offset=claim.get("char_start", 0)))
     candidates = retrieve(text, entities, triples, knowledge)
-    trace = {
+    trace: dict[str, Any] = {
         "claim_id": claim_id,
         "candidates": [{"source_ref": c.triple.source_ref, "score": c.score, "reasons": list(c.reasons)}
                        for c in candidates],
@@ -94,10 +105,13 @@ def verify_claim(claim, triples, knowledge, verifier_version, nli_model=None):
     elif allergy_entities:
         decision = _allergy_concept(allergy_triples, negated)
     else:
-        decision = _coded_match(text, coded, triples, knowledge, negated)
-        if decision is None:
-            decision = Decision(NLIClass.NEUTRAL, 1.0, None, "no_candidates") if not candidates else _nli(
-                claim_id, text, candidates, knowledge, nli_model)
+        coded_decision = _coded_match(text, coded, triples, knowledge, negated)
+        if coded_decision is not None:
+            decision = coded_decision
+        elif candidates:
+            decision = _nli(claim_id, text, candidates, knowledge, nli_model)
+        else:
+            decision = Decision(NLIClass.NEUTRAL, 1.0, None, "no_candidates")
     trace["branch"] = decision.branch
 
     facts = ClaimFacts(
@@ -126,7 +140,8 @@ def verify_claim(claim, triples, knowledge, verifier_version, nli_model=None):
     return result.model_dump(mode="json"), trace
 
 
-def _medication(text, rx, allergy_triples, knowledge, trace):
+def _medication(text: str, rx: Sequence[Entity], allergy_triples: Sequence[Triple], knowledge: Knowledge,
+                trace: dict[str, Any]) -> Decision:
     classes = {knowledge.ingredient_classes.get(e.code) for e in rx} - {None}
     if not classes:
         trace["drug_class_unknown"] = True  # a known gap: no class, so rule 1 cannot fire (PLAN 4.5)
@@ -145,7 +160,7 @@ def _medication(text, rx, allergy_triples, knowledge, trace):
     )
 
 
-def _allergy_concept(allergy_triples, negated):
+def _allergy_concept(allergy_triples: Sequence[Triple], negated: bool) -> Decision:
     if not allergy_triples:
         return Decision(NLIClass.NEUTRAL, 1.0, None, "no_allergy_record")  # absence is not evidence of no allergy
     ref = allergy_triples[0].source_ref
@@ -154,7 +169,8 @@ def _allergy_concept(allergy_triples, negated):
     return Decision(NLIClass.ENTAILMENT, 1.0, ref, "allergy_documented")
 
 
-def _coded_match(text, coded, triples, knowledge, negated):
+def _coded_match(text: str, coded: Sequence[Entity], triples: Sequence[Triple], knowledge: Knowledge,
+                 negated: bool) -> Optional[Decision]:
     for entity in sorted(coded, key=lambda e: e.char_start):
         matches = sorted((t for t in triples if t.object_code == entity.code and t.object_system is entity.system),
                          key=lambda t: t.source_ref)
@@ -176,7 +192,7 @@ def _coded_match(text, coded, triples, knowledge, negated):
     return None
 
 
-def _claimed_number(text, entity):
+def _claimed_number(text: str, entity: Entity) -> Optional[float]:
     """First number after the entity in the claim, ignoring ISO dates."""
     blanked = DATE.sub(lambda m: " " * len(m.group()), text)
     start = max(blanked.lower().find(entity.surface_text.lower()), 0)
@@ -184,12 +200,13 @@ def _claimed_number(text, entity):
     return float(match.group()) if match else None
 
 
-def _nli(claim_id, text, candidates, knowledge, model):
+def _nli(claim_id: str, text: str, candidates: Sequence[Candidate], knowledge: Knowledge,
+         model: Optional[NliScorer]) -> Decision:
     if model is None:
         raise VerificationError(claim_id, "unresolved candidates need the NLI scorer, which is not available")
     thresholds = knowledge.thresholds
-    contradiction = None
-    best = None
+    contradiction: Optional[tuple[float, Candidate]] = None
+    best: Optional[tuple[float, float, float, Candidate]] = None
     for candidate in candidates:
         scores = _score(claim_id, model, verbalize(candidate.triple), text, thresholds.nli_timeout_seconds)
         entailment, neutral, contra = scores["entailment"], scores["neutral"], scores["contradiction"]
@@ -204,13 +221,15 @@ def _nli(claim_id, text, candidates, knowledge, model):
             and candidate.triple.status == "active" else set())
         return Decision(NLIClass.CONTRADICTION, contra, candidate.triple.source_ref, "nli_contradiction",
                         frozenset(kinds))
+    if best is None:  # candidates is never empty here (verify_claim checks it); fail closed if that ever changes
+        raise VerificationError(claim_id, "no candidate was scored")
     entailment, neutral, contra, candidate = best
     if entailment >= max(neutral, contra):
         return Decision(NLIClass.ENTAILMENT, entailment, candidate.triple.source_ref, "nli_entailment")
     return Decision(NLIClass.NEUTRAL, max(neutral, contra), None, "nli_neutral")
 
 
-def _score(claim_id, model, premise, hypothesis, timeout):
+def _score(claim_id: str, model: NliScorer, premise: str, hypothesis: str, timeout: float) -> dict[str, float]:
     executor = ThreadPoolExecutor(max_workers=1)
     try:
         scores = executor.submit(model.score, premise, hypothesis).result(timeout=timeout)

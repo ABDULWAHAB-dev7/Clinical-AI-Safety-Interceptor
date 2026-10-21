@@ -7,6 +7,7 @@ partial knowledge.
 import csv
 import pathlib
 from dataclasses import dataclass
+from typing import Any
 
 import yaml
 
@@ -45,15 +46,15 @@ class Thresholds:
 
 @dataclass(frozen=True)
 class Knowledge:
-    lexicon: tuple  # LexiconEntry, longest surface first (ties by surface) so matching is deterministic
-    allergy_concept_codes: frozenset
-    allergy_classes: dict
-    ingredient_classes: dict
-    dose_limits: dict
+    lexicon: tuple[LexiconEntry, ...]  # LexiconEntry, longest surface first (ties by surface) so matching is deterministic
+    allergy_concept_codes: frozenset[str]
+    allergy_classes: dict[str, str]
+    ingredient_classes: dict[str, str]
+    dose_limits: dict[str, DoseLimit]
     thresholds: Thresholds
 
 
-def load_knowledge(directory=KNOWLEDGE_DIR):
+def load_knowledge(directory: str | pathlib.Path = KNOWLEDGE_DIR) -> Knowledge:
     directory = pathlib.Path(directory)
     try:
         return Knowledge(
@@ -66,10 +67,10 @@ def load_knowledge(directory=KNOWLEDGE_DIR):
         raise PipelineError(ErrorClass.POLICY_LOAD_FAILURE, f"knowledge files: {type(exc).__name__}")
 
 
-def _load_lexicon(path):
+def _load_lexicon(path: pathlib.Path) -> tuple[LexiconEntry, ...]:
     with path.open(encoding="utf-8", newline="") as fh:
         lines = [line for line in fh if line.strip() and not line.lstrip().startswith("#")]
-    entries = []
+    entries: list[LexiconEntry] = []
     for row in csv.DictReader(lines):
         surface = row["surface"].strip().lower()
         code = row["code"].strip()
@@ -81,7 +82,7 @@ def _load_lexicon(path):
     return tuple(sorted(entries, key=lambda e: (-len(e.surface), e.surface)))
 
 
-def _load_classes(path):
+def _load_classes(path: pathlib.Path) -> dict[str, Any]:
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     return {
         "allergy_concept_codes": frozenset(str(c) for c in raw["allergy_concept_codes"]),
@@ -90,9 +91,9 @@ def _load_classes(path):
     }
 
 
-def _load_dose_limits(path):
+def _load_dose_limits(path: pathlib.Path) -> dict[str, DoseLimit]:
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))["limits"]
-    limits = {}
+    limits: dict[str, DoseLimit] = {}
     for code, entry in raw.items():
         limit = DoseLimit(str(entry["name"]), float(entry["max_single_mg"]), float(entry["max_daily_mg"]))
         if limit.max_single_mg <= 0 or limit.max_daily_mg <= 0:
@@ -101,7 +102,7 @@ def _load_dose_limits(path):
     return limits
 
 
-def _load_thresholds(path):
+def _load_thresholds(path: pathlib.Path) -> Thresholds:
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     thresholds = Thresholds(
         contradiction_min=float(raw["contradiction_min"]),

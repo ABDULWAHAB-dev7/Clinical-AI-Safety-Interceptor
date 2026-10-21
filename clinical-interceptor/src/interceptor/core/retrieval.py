@@ -10,11 +10,14 @@ Candidates with score 0 are discarded. Ties break by source_ref, so results are 
 """
 
 import re
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 from interceptor.fhir.triples import Triple, verbalize
 
 from .contracts import CodeSystem
+from .entities import Entity
+from .knowledge import Knowledge
 
 MAX_CANDIDATES = 5
 TOKEN = re.compile(r"[a-z0-9]+")
@@ -28,14 +31,15 @@ STOPWORDS = frozenset(
 class Candidate:
     triple: Triple
     score: int
-    reasons: tuple
+    reasons: tuple[str, ...]
 
 
-def content_tokens(text):
+def content_tokens(text: str) -> set[str]:
     return {t for t in TOKEN.findall(text.lower()) if len(t) >= 3 and t not in STOPWORDS}
 
 
-def retrieve(claim_text, entities, triples, knowledge, k=MAX_CANDIDATES):
+def retrieve(claim_text: str, entities: Sequence[Entity], triples: Iterable[Triple], knowledge: Knowledge,
+             k: int = MAX_CANDIDATES) -> list[Candidate]:
     claim_tokens = content_tokens(claim_text)
     allergy_concept = any(
         e.system is CodeSystem.SNOMED_CT and e.code in knowledge.allergy_concept_codes for e in entities
@@ -45,9 +49,10 @@ def retrieve(claim_text, entities, triples, knowledge, k=MAX_CANDIDATES):
         for e in entities
         if e.system is CodeSystem.RXNORM and e.code in knowledge.ingredient_classes
     }
-    scored = []
+    scored: list[Candidate] = []
     for triple in triples:
-        score, reasons = 0, []
+        score = 0
+        reasons: list[str] = []
         if triple.object_code and any(
             e.system is triple.object_system and e.code == triple.object_code for e in entities
         ):

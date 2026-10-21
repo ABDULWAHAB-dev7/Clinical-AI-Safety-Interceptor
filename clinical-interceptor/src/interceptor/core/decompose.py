@@ -16,6 +16,7 @@ for every assertion.
 """
 
 import re
+from typing import Optional
 
 from .errors import ErrorClass, PipelineError
 from .models import Assertion, AssertionType
@@ -42,7 +43,7 @@ SECTION_ALIASES = {"meds": "medications", "hpi": "history of present illness", "
                    "ros": "review of systems"}
 
 
-def section_key(name):
+def section_key(name: str) -> str:
     """The context tag for a header: lower case, single spaces, with the usual abbreviations expanded."""
     key = re.sub(r"\s*(?:&|and)\s*", " & ", re.sub(r"\s+", " ", name.strip().lower()))
     if key == "assessment & plan":
@@ -51,14 +52,14 @@ def section_key(name):
     return key.replace(" ", "_").replace("&", "and")
 
 
-def decompose(text, hints=None):
+def decompose(text: str, hints: Optional[dict[str, AssertionType]] = None) -> list[Assertion]:
     """Splits text into assertions. `hints` maps lowercase record terms to a type; it guides typing only."""
     if not isinstance(text, str):
         raise PipelineError(ErrorClass.DECOMPOSITION_SCHEMA_INVALID, "document text must be a string")
     hints = hints or {}
 
-    assertions = []
-    section = None
+    assertions: list[Assertion] = []
+    section: Optional[str] = None
     for line_match in LINE.finditer(text):
         line_start, line_end = line_match.start(), line_match.end()
         position = line_start
@@ -92,9 +93,9 @@ def decompose(text, hints=None):
     return assertions
 
 
-def _clauses(text, start, end):
+def _clauses(text: str, start: int, end: int) -> list[tuple[int, int]]:
     """Atomic (start, end) spans inside one sentence, trimmed of surrounding whitespace. Offsets are absolute."""
-    cuts = []  # (cut_start, next_start)
+    cuts: list[tuple[int, int]] = []  # (cut_start, next_start)
     for split in SPLIT.finditer(text, start, end):
         following = text[split.end():end].split()
         if split.group(0) == ";" and not following:
@@ -103,14 +104,14 @@ def _clauses(text, start, end):
             continue
         cuts.append((split.start(), split.end()))
 
-    spans = []
+    spans: list[tuple[int, int]] = []
     piece_start = start
     for cut_start, next_start in cuts:
         spans.append((piece_start, cut_start))
         piece_start = next_start
     spans.append((piece_start, end))
 
-    trimmed = []
+    trimmed: list[tuple[int, int]] = []
     for piece_start, piece_end in spans:
         while piece_start < piece_end and text[piece_start].isspace():
             piece_start += 1
@@ -121,7 +122,7 @@ def _clauses(text, start, end):
     return trimmed
 
 
-def _classify(section, body, lower, hints):
+def _classify(section: Optional[str], body: str, lower: str, hints: dict[str, AssertionType]) -> AssertionType:
     if section == "allergies" or "allerg" in lower:
         return AssertionType.ALLERGY
     if section == "labs":

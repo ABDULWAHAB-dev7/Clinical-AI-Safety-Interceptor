@@ -54,7 +54,7 @@ def triples_from_ingest(result, knowledge):
     return triples
 
 
-def verbalize(triple):
+def verbalize(triple: Triple) -> str:
     """Premise text for the NLI model."""
     code = _code_label(triple)
     if triple.predicate == "HAS_ALLERGY":

@@ -18,7 +18,7 @@ class ErrorClass(str, Enum):
 
 
 class PipelineError(Exception):
-    def __init__(self, error_class, detail=""):
+    def __init__(self, error_class: ErrorClass, detail: str = "") -> None:
         super().__init__(f"{error_class.value}: {detail}" if detail else error_class.value)
         self.error_class = error_class
         self.detail = detail

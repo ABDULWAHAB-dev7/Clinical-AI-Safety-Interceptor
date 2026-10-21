@@ -5,12 +5,13 @@ The policy file may only tune thresholds and scope; its key set is fixed, so unk
 """
 
 import pathlib
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 import yaml
 
 from .errors import ErrorClass, PipelineError
-from .models import Decision, Outcome, Verdict
+from .models import Decision, Outcome, Verdict, VerdictRecord
 
 REQUIRED_KEYS = {"policy_version", "doc_types_in_scope", "nli", "tolerances"}
 
@@ -26,13 +27,13 @@ CONFIGURABLE_RULES = (C1,)
 @dataclass(frozen=True)
 class Policy:
     version: str
-    doc_types_in_scope: frozenset
+    doc_types_in_scope: frozenset[str]
     entailment_threshold: float
     contradiction_threshold: float
     lab_tolerance_abs: float
 
 
-def load_policy(path):
+def load_policy(path: str | pathlib.Path) -> Policy:
     """Loads a versioned policy file. Any problem raises POLICY_LOAD_FAILURE; the service must not start."""
     try:
         raw = yaml.safe_load(pathlib.Path(path).read_text(encoding="utf-8"))
@@ -62,7 +63,8 @@ def load_policy(path):
     return policy
 
 
-def decide(policy, records, errors, assertion_count):
+def decide(policy: Policy, records: Iterable[VerdictRecord], errors: Sequence[object],
+           assertion_count: int) -> Decision:
     """Evaluates rules in fixed order. Any hard-stop rule forces HARD_BLOCK; C1 alone gives WARN."""
     verdicts = {r.verdict for r in records}
     fired = []

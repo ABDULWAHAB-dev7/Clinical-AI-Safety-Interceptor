@@ -1,6 +1,8 @@
 """Stage 5: maps verdicts to character spans of the original document (architecture 3.6)."""
 
-from .models import SpanRecord, Verdict
+from collections.abc import Sequence
+
+from .models import Assertion, SpanRecord, Verdict, VerdictRecord
 
 PRECEDENCE = {
     Verdict.CONTRADICTED: 3,
@@ -11,10 +13,11 @@ PRECEDENCE = {
 }
 
 
-def build_spans(document, assertions, records):
+def build_spans(document: str, assertions: Sequence[Assertion],
+                records: Sequence[VerdictRecord]) -> list[SpanRecord]:
     """One span per assertion, ordered by start. Overlapping spans merge, keeping the highest-precedence verdict."""
     by_id = {r.assertion_id: r for r in records}
-    spans = []
+    spans: list[SpanRecord] = []
     for assertion in sorted(assertions, key=lambda a: a.span_start):
         record = by_id[assertion.assertion_id]
         current = SpanRecord(
