@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/index.py": {
+      "excludeFiles": "{models/**,seed/**,benchmark/**,benchmarks/**,tests/**,web/**,docs/**,scripts/**,migrations/**,tools/**,examples/**,.venv/**,**/__pycache__/**,**/*.pdf}"
+    }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
+  ]
+}

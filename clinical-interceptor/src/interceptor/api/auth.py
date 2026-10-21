@@ -62,6 +62,9 @@ def _bearer(request: Request) -> Optional[str]:
 
 
 def can_see_patient(request: Request, pseudo_id):
+    # Bearer-only demo mode has no client registry, so the token's scope is the only check there.
+    if request.app.state.auth_mode == "bearer":
+        return True
     return request.app.state.mtls.allows(request.state.client_id, pseudo_id)
 
 
@@ -77,12 +80,19 @@ def require_scope(scope_key):
 
     def dependency(request: Request):
         state = request.app.state
-        # Both factors are required (API.md 2.1). The certificate is checked first, then the token, then the scope.
-        request.state.client_id = identify_client(request, state.mtls)
+        bearer_only = state.auth_mode == "bearer"
+        if not bearer_only:
+            # Both factors are required (API.md 2.1). The certificate is checked first, then the token, then the scope.
+            request.state.client_id = identify_client(request, state.mtls)
         token = _bearer(request)
         if token is None:
             raise InterceptionError("AUTH_TOKEN_INVALID", "Bearer token is missing.")
         claims = state.verifier.verify(token)
+        if bearer_only:
+            # Demo mode: no certificate is presented, so the token subject identifies the client.
+            request.state.client_id = str(claims.get("sub", ""))
+            if not request.state.client_id:
+                raise InterceptionError("AUTH_TOKEN_INVALID", "Bearer token has no subject.")
         granted = set(str(claims.get("scope", "")).split())
         if scope not in granted:
             raise InterceptionError("AUTH_SCOPE_INSUFFICIENT", f"Token lacks the scope {scope}.")

@@ -62,7 +62,11 @@ class VerifyRequest(BaseModel):
 
 
 def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_model=None, knowledge=None,
-               mtls=None, limiter=None, upstream=None):
+               mtls=None, limiter=None, upstream=None, auth_mode="mtls"):
+    if auth_mode not in ("mtls", "bearer"):
+        raise ValueError("auth_mode must be 'mtls' or 'bearer'")
+    if auth_mode == "bearer" and verifier is None:
+        raise ValueError("bearer mode needs a token verifier (INTERCEPTOR_JWT_PUBLIC_KEY_FILE)")
     policy = load_policy(policy_path)
     knowledge = knowledge if knowledge is not None else load_knowledge()  # refuses to start without knowledge files  # refuses to start without a valid policy (architecture 7.2 #5)
     if not isinstance(pseudo_key, (bytes, bytearray)) or len(pseudo_key) < 16:
@@ -79,6 +83,7 @@ def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_m
     app.state.upstream = upstream  # None: the proxy endpoint refuses (fail-closed)
     app.state.verifier_version = VERIFIER_VERSION
     app.state.mtls = mtls if mtls is not None else MtlsConfig()  # empty registry: every clinical request is refused
+    app.state.auth_mode = auth_mode  # "mtls" (both factors) or "bearer" (demo only, see build_default_app)
     app.state.limiter = limiter if limiter is not None else RateLimiter(60)
     register_error_handlers(app)
 
@@ -133,7 +138,7 @@ def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_m
     @app.post("/v1/verify", dependencies=[require_scope("verify")])
     def verify(body: VerifyRequest, request: Request):
         # This endpoint finds the patient from the stored bundle, so a patient-restricted client cannot be checked here.
-        if not app.state.mtls.is_unrestricted(request.state.client_id):
+        if app.state.auth_mode != "bearer" and not app.state.mtls.is_unrestricted(request.state.client_id):
             raise InterceptionError("AUTH_SCOPE_INSUFFICIENT", "This endpoint needs a client with access to all patients.")
         if body.doc_type not in policy.doc_types_in_scope:
             raise HTTPException(status_code=400, detail="document type is not in facility scope")
@@ -155,6 +160,9 @@ def _request_id(request):
 
 
 def _load_verifier():
+    inline = os.environ.get("INTERCEPTOR_JWT_PUBLIC_KEY")  # PEM text, for hosts without a filesystem (Vercel)
+    if inline:
+        return JwtVerifier(inline.replace("\\n", "\n"))
     path = os.environ.get("INTERCEPTOR_JWT_PUBLIC_KEY_FILE")
     if not path:
         return None  # DenyAllVerifier is installed: every clinical request is refused
@@ -206,7 +214,12 @@ def build_default_app():
         raise RuntimeError("INTERCEPTOR_DATABASE_URL is required")
     if not key:
         raise RuntimeError("INTERCEPTOR_PSEUDO_KEY is required")
+    auth_mode = os.environ.get("INTERCEPTOR_AUTH_MODE", "mtls")
+    if auth_mode == "bearer" and os.environ.get("INTERCEPTOR_DEPLOYMENT_PROFILE") != "vercel-demo":
+        # Bearer-only drops the client certificate. It is allowed only for the labelled demo profile (G3 amendment).
+        raise RuntimeError("INTERCEPTOR_AUTH_MODE=bearer needs INTERCEPTOR_DEPLOYMENT_PROFILE=vercel-demo")
     return create_app(
+        auth_mode=auth_mode,
         policy_path=os.environ.get("INTERCEPTOR_POLICY", str(ROOT / "config/policy/default.yaml")),
         fhir_dir=os.environ.get("INTERCEPTOR_FHIR_DIR", str(ROOT / "fixtures/fhir")),
         store=PostgresAuditStore(dsn),
