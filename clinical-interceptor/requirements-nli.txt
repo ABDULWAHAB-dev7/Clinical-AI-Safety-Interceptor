@@ -1,0 +1,14 @@
+# The NLI inference service only. The interceptor API never imports torch, so the API image stays small and a
+# serverless function can still be built from it.
+#
+# The CPU wheel of torch is used. The local version (2.14.1+cpu) sorts above the plain 2.14.1, so pip takes the
+# CPU build from the extra index and not the CUDA build from PyPI.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.14.1
+sentence-transformers==6.1.0
+transformers==5.20.2
+
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.7,<3

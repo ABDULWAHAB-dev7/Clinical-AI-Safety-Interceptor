@@ -22,10 +22,17 @@ LABELS = frozenset({"entailment", "neutral", "contradiction"})
 
 
 def directory_sha256(path):
-    """Hash of every file in the directory (relative path and content), in a stable order."""
+    """Hash of every file in the directory (relative path and content), in a stable order.
+
+    The order is the POSIX relative path, compared as a byte string. Sorting the Path objects themselves would not
+    do: PurePath compares case-insensitively on Windows and case-sensitively on POSIX, so the same directory would
+    hash differently on a developer machine and on the Linux host that runs the service, and the lock file would
+    pass on one platform and fail on the other.
+    """
     digest = hashlib.sha256()
     root = Path(path)
-    for file in sorted(p for p in root.rglob("*") if p.is_file()):
+    files = sorted((p for p in root.rglob("*") if p.is_file()), key=lambda p: p.relative_to(root).as_posix())
+    for file in files:
         digest.update(file.relative_to(root).as_posix().encode("utf-8"))
         digest.update(hashlib.sha256(file.read_bytes()).digest())
     return digest.hexdigest()
@@ -61,11 +68,26 @@ class NLIScorer:
         self._order = [id2label[i] for i in range(3)]
 
     def score(self, premise, hypothesis):
-        raw = self._model.predict([(premise, hypothesis)])[0]
-        values = [float(v) for v in raw]
-        if len(values) != 3 or any(math.isnan(v) or math.isinf(v) for v in values):
-            raise ValueError("unexpected model output")
-        return dict(zip(self._order, _probabilities(values)))
+        return self.score_batch([(premise, hypothesis)])[0]
+
+    def score_batch(self, pairs):
+        """Scores several premise/hypothesis pairs in one forward pass.
+
+        One pass over a batch costs less per pair than one pass per pair (G1-measurements.json: 149.8 ms for a
+        single pair against 74.8 ms per pair at batch size 4), and the verifier's latency budget is for all
+        NLI-routed claims in a note, not for each one.
+        """
+        pairs = list(pairs)
+        if not pairs:
+            return []
+        raw = self._model.predict(pairs)
+        results = []
+        for row in raw:
+            values = [float(v) for v in row]
+            if len(values) != 3 or any(math.isnan(v) or math.isinf(v) for v in values):
+                raise ValueError("unexpected model output")
+            results.append(dict(zip(self._order, _probabilities(values))))
+        return results
 
     def warm_up(self):
         """One scoring call at startup, so the first request does not pay for it and a broken model fails early."""

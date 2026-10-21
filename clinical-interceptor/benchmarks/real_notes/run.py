@@ -23,6 +23,7 @@ Note text, claim text and chart facts are synthetic, written for this benchmark.
 
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -40,8 +41,9 @@ from interceptor.fhir.triples import triples_from_ingest  # noqa: E402
 from interceptor.nli.scorer import NLIScorer  # noqa: E402
 
 VERSION = "real-notes-benchmark-1"
-MODEL_DIR = ROOT / "models" / "nli" / "cross-encoder-nli-deberta-v3-base"
-LOCK_FILE = ROOT / "models" / "nli" / "MODEL.lock"
+MODEL_DIR = Path(os.environ.get("INTERCEPTOR_NLI_MODEL_PATH")
+                 or ROOT / "models" / "nli" / "cross-encoder-nli-deberta-v3-base")
+LOCK_FILE = Path(os.environ.get("INTERCEPTOR_NLI_MODEL_LOCK") or ROOT / "models" / "nli" / "MODEL.lock")
 CASES = HERE / "cases"
 RESULTS = HERE / "results" / "results.json"
 REPORT = ROOT / "docs" / "VALIDATION_REPORT.md"

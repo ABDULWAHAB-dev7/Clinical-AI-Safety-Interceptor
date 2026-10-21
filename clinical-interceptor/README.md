@@ -70,7 +70,7 @@ Module names below are relative to `src/interceptor/`. Deviations from the archi
 
 These block the parts not built. The code exposes an interface for each so it can be added without touching the fail-closed rules.
 
-1. **NLI model selection and license.** Without a model, NLI-routed assertions become `VERIFICATION_ERROR` and block. Free-text claims (plans, findings, conditions) therefore always block today.
+1. **NLI model selection and license.** Without a model, NLI-routed assertions become `VERIFICATION_ERROR` and block. Free-text claims (plans, findings, conditions) therefore always block today. The checkpoint `cross-encoder/nli-deberta-v3-base` is approved and locked in `models/nli/MODEL.lock` (the weights are downloaded locally, never committed) and runs as a separate service; see [docs/nli-service.md](docs/nli-service.md).
 2. **Review-store retention design.** Span text is returned only for delivered documents. No review store exists yet, so the dashboard cannot display the attributed document.
 3. **Upstream BAA coverage.** The proxy is built, but the prompt is sent to the upstream model, so a BAA (or a locally hosted model) is needed before it carries real PHI.
 

@@ -31,6 +31,9 @@ Do not put real records or real PHI in it.
 | `INTERCEPTOR_AUTH_MODE` | `bearer` | Demo mode. The app refuses to start in this mode unless the profile below is set. |
 | `INTERCEPTOR_DEPLOYMENT_PROFILE` | `vercel-demo` | Required guard for bearer-only mode. |
 | `INTERCEPTOR_RATE_LIMIT_PER_MINUTE` | `120` | Per-token-subject limit. The dashboard makes three calls per analysed note. |
+| `INTERCEPTOR_NLI_MODE` | `none` or `remote` | `none` blocks the claims the rules cannot settle. `remote` calls the NLI service. See [nli-service.md](nli-service.md). |
+| `INTERCEPTOR_NLI_ENDPOINT` | the NLI service URL | Only with `INTERCEPTOR_NLI_MODE=remote`. |
+| `INTERCEPTOR_NLI_TOKEN` | the service token | Only with `INTERCEPTOR_NLI_MODE=remote`, and only if the service wants one. |
 
 ### `clinical-interceptor-web`
 
@@ -67,7 +70,7 @@ the length of one request. The unpooled DSN is for one-off work such as applying
 |---|---|
 | Decompose a note into claims | Works. |
 | Verify against a FHIR bundle | Works for the deterministic rules: allergy concepts, coded conditions, labs, medication claims and dose limits. |
-| Verify free-text statements | **Blocked.** The NLI checkpoint is about 700 MB and does not fit in a function bundle, so `INTERCEPTOR_NLI_MODEL_PATH` is unset and a claim that needs the model raises `VERIFICATION_ERROR`. The note is blocked, nothing is released. This is the fail-closed design working, not a bug. |
+| Verify free-text statements | Needs the NLI model. With `INTERCEPTOR_NLI_MODE=none` the claim raises `VERIFICATION_ERROR`, the note is blocked and nothing is released. With `INTERCEPTOR_NLI_MODE=remote` and a reachable NLI service, the claim is scored. See [nli-service.md](nli-service.md). |
 | Audit trail | Works. Every note, trace and event is written to Postgres. |
 | Patient scoping | Not enforced in bearer mode. Every patient is visible to a token that holds the scope. |
 | Client certificate (API.md 2.1 factor 1) | Not implemented. Vercel does not document inbound client-certificate checks. |
@@ -75,7 +78,15 @@ the length of one request. The unpooled DSN is for one-off work such as applying
 The dashboard's home page is a saved fixture, so it renders the full heatmap without a backend. The `/analyze`
 page calls the live API. A note made only of statements the deterministic rules can settle returns a real report
 with real findings. A note with a free-text statement returns `422 INTERCEPT_VERIFIER_UNAVAILABLE` and the page says
-the note was blocked rather than checked.
+the note was blocked rather than checked, unless the NLI service is configured.
+
+### The NLI model on Vercel
+
+The approved checkpoint is about 6 GB and a Vercel function may not exceed 250 MB, so the model cannot run inside
+the function. Run it as a separate service — `nli_service/` in this repository — and point
+`INTERCEPTOR_NLI_ENDPOINT` at it. It stays inside your own network, which is what the Gate G1 memo requires; a
+hosted endpoint operated by a third party is not allowed. The service needs about 4 GB of memory and a CPU with
+at least 8 threads to stay inside the 350 ms NLI budget.
 
 ## Deploying a change
 

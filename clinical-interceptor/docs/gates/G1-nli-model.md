@@ -45,6 +45,16 @@ before approval. So does the base model's own licence.
 The synthetic benchmark cannot measure it, because no benchmark claim reaches the NLI model (BG1 is "not evaluable").
 Validating NLI on clinical text needs either approved real data (Gate G2) or a clinically reviewed test set.
 
+## Where it runs
+
+The checkpoint does not fit in a serverless function, so it runs in a separate service that the operator hosts:
+`nli_service/` in this repository, with `INTERCEPTOR_NLI_MODE=remote` on the interceptor. The premise and the
+claim stay inside the operator's network, which is the constraint above; a hosted endpoint operated by a third
+party is still not allowed. See [../nli-service.md](../nli-service.md).
+
+The latency numbers above were measured with the checkpoint in the same process. Through the service, one note of
+six claims takes 264 ms batched against 498 ms one call per claim, because the batch is one forward pass.
+
 ## Needed to close G1
 
 1. **Permission to install** `torch` and `sentence-transformers` (CPU builds) and to **download** the two base candidates.

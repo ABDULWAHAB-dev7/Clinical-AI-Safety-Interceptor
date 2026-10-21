@@ -192,16 +192,45 @@ def _load_upstream():
     return UpstreamClient(base, os.environ.get("INTERCEPTOR_UPSTREAM_API_KEY"), routes)
 
 
-def _load_nli():
-    """The local NLI model, if configured. A configured model that fails to load or warm up stops the service."""
-    path = os.environ.get("INTERCEPTOR_NLI_MODEL_PATH")
-    if not path:
-        return None  # claims that need the model then fail closed
-    from interceptor.nli.scorer import NLIScorer
+def _load_nli(knowledge=None):
+    """The NLI scorer: none, a local model, or a self-hosted inference service.
 
-    scorer = NLIScorer(path, lock_path=os.environ.get("INTERCEPTOR_NLI_MODEL_LOCK"))
-    scorer.warm_up()
-    return scorer
+    local   the approved checkpoint in this process (INTERCEPTOR_NLI_MODEL_PATH). Needs torch in the image.
+    remote  a self-hosted inference service (INTERCEPTOR_NLI_ENDPOINT). For a serverless function, which cannot
+            hold torch or the checkpoint. The premise and the claim stay inside the operator's network.
+    none    no model. Claims the rules cannot settle then fail closed, which is rule R2.
+
+    A model that is configured but does not load, or a service that does not answer, stops the service. It is
+    never a per-request failure and never a default score.
+    """
+    mode = os.environ.get("INTERCEPTOR_NLI_MODE", "").strip().lower()
+    path = os.environ.get("INTERCEPTOR_NLI_MODEL_PATH")
+    endpoint = os.environ.get("INTERCEPTOR_NLI_ENDPOINT")
+    if not mode:
+        mode = "local" if path else "none"
+
+    if mode == "none":
+        return None
+
+    timeout = 5.0
+    if knowledge is not None:
+        timeout = knowledge.thresholds.nli_timeout_seconds
+
+    if mode == "local":
+        if not path:
+            raise RuntimeError("INTERCEPTOR_NLI_MODE=local needs INTERCEPTOR_NLI_MODEL_PATH")
+        from interceptor.nli.scorer import NLIScorer
+
+        scorer = NLIScorer(path, lock_path=os.environ.get("INTERCEPTOR_NLI_MODEL_LOCK"))
+        scorer.warm_up()
+        return scorer
+
+    if mode == "remote":
+        from interceptor.nli.remote import build_scorer
+
+        return build_scorer(endpoint, timeout_seconds=timeout, token=os.environ.get("INTERCEPTOR_NLI_TOKEN"))
+
+    raise RuntimeError("INTERCEPTOR_NLI_MODE must be 'none', 'local' or 'remote'")
 
 
 def build_default_app():
@@ -218,6 +247,7 @@ def build_default_app():
     if auth_mode == "bearer" and os.environ.get("INTERCEPTOR_DEPLOYMENT_PROFILE") != "vercel-demo":
         # Bearer-only drops the client certificate. It is allowed only for the labelled demo profile (G3 amendment).
         raise RuntimeError("INTERCEPTOR_AUTH_MODE=bearer needs INTERCEPTOR_DEPLOYMENT_PROFILE=vercel-demo")
+    knowledge = load_knowledge()  # loaded here so the NLI timeout comes from the same policy file
     return create_app(
         auth_mode=auth_mode,
         policy_path=os.environ.get("INTERCEPTOR_POLICY", str(ROOT / "config/policy/default.yaml")),
@@ -228,5 +258,6 @@ def build_default_app():
         mtls=_load_mtls(),
         limiter=RateLimiter(int(os.environ.get("INTERCEPTOR_RATE_LIMIT_PER_MINUTE", "60"))),
         upstream=_load_upstream(),
-        nli_model=_load_nli(),
+        knowledge=knowledge,
+        nli_model=_load_nli(knowledge),
     )

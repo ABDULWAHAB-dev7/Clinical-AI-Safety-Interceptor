@@ -6,6 +6,9 @@ api/app.py build_default_app). Migrations are NOT run here: apply them with `ale
 Required environment variables (set in the Vercel dashboard, never in the repository):
   INTERCEPTOR_DATABASE_URL, INTERCEPTOR_PSEUDO_KEY, INTERCEPTOR_JWT_PUBLIC_KEY (the PEM text),
   INTERCEPTOR_AUTH_MODE=bearer, INTERCEPTOR_DEPLOYMENT_PROFILE=vercel-demo.
+
+For the NLI scorer (see docs/nli-service.md):
+  INTERCEPTOR_NLI_MODE=none|local|remote, and for "remote" INTERCEPTOR_NLI_ENDPOINT and INTERCEPTOR_NLI_TOKEN.
 """
 
 import os

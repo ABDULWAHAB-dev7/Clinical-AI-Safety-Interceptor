@@ -1,5 +1,7 @@
 {
   "model": "cross-encoder/nli-deberta-v3-base",
   "license": "apache-2.0 (model card)",
-  "sha256": "435ef41d24f6b5d36bdc5d4d1b4c7bbb70b07ce55a1178547d16455ae05f6701"
+  "sha256": "3e483ca6ede907a4912d26061fa173b399559beea6933ff4cb6e4fa8a174a5dd",
+  "hash_algorithm": "sha256 over every file in the directory: the POSIX relative path, then the sha256 of the file content, files sorted by POSIX relative path",
+  "note": "The model, the licence and the 43 files are unchanged. The digest changed on 2026-10-22 because the file order is now the POSIX path order on every platform. The earlier digest, 435ef41d24f6b5d36bdc5d4d1b4c7bbb70b07ce55a1178547d16455ae05f6701, was computed with the Path object's own order, which is case-insensitive on Windows and case-sensitive on POSIX, so it verified on the machine that produced it and failed on the Linux host that runs the service."
 }

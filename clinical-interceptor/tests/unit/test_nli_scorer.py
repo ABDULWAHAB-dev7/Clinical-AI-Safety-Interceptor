@@ -1,3 +1,4 @@
+import hashlib
 import json
 import pathlib
 import tempfile
@@ -115,6 +116,34 @@ class LockFileTests(unittest.TestCase):
         with tmp_a, tmp_b:
             self.assertNotEqual(directory_sha256(a), directory_sha256(b))
             self.assertEqual(directory_sha256(a), directory_sha256(a))
+
+    def test_the_hash_does_not_depend_on_the_platform(self):
+        """The lock has to verify on the Linux host as well as on a developer machine.
+
+        Sorting the Path objects would order "README.md" before "added_tokens.json" on Windows and after it on
+        POSIX, because PurePath compares case-insensitively on Windows only. The hash therefore sorts on the
+        POSIX relative path, and this test pins that order.
+        """
+        tmp, path = model_dir()
+        with tmp:
+            (path / "README.md").write_bytes(b"readme")
+            (path / "added_tokens.json").write_bytes(b"tokens")
+            (path / "Zebra.txt").write_bytes(b"zebra")
+            expected = hashlib.sha256()
+            for name in ("README.md", "Zebra.txt", "added_tokens.json", "config.json", "model.bin"):
+                expected.update(name.encode("utf-8"))
+                expected.update(hashlib.sha256((path / name).read_bytes()).digest())
+            self.assertEqual(directory_sha256(path), expected.hexdigest())
+
+    def test_the_hash_is_the_same_for_a_directory_with_mixed_case_names(self):
+        """Two directories with the same names in a different case order must not hash differently."""
+        tmp_a, a = model_dir()
+        tmp_b, b = model_dir()
+        with tmp_a, tmp_b:
+            for name, content in (("README.md", b"r"), ("added_tokens.json", b"a"), ("Config.json", b"c")):
+                (a / name).write_bytes(content)
+                (b / name).write_bytes(content)
+            self.assertEqual(directory_sha256(a), directory_sha256(b))
 
 
 class WarmUpAndIntegrationTests(unittest.TestCase):

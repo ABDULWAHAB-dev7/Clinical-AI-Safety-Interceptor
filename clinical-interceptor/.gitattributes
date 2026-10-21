@@ -1,2 +1,8 @@
 *.sh text eol=lf
 Dockerfile text eol=lf
+nli_service/Dockerfile text eol=lf
+
+# The benchmark notes are hashed, so they must be checked out byte for byte. Without this, a Windows checkout
+# rewrites them with CRLF and every note_sha256 in the gold files stops matching (tests/unit/test_benchmark.py).
+benchmark/corpus/v1/notes/*.txt text eol=lf
+benchmarks/real_notes/cases/*/note.txt text eol=lf

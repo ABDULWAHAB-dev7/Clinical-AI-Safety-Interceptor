@@ -23,7 +23,7 @@ from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from dataclasses import dataclass, field
-from typing import Any, Optional, Protocol
+from typing import Any, Optional, Protocol, cast
 
 from pydantic import ValidationError
 
@@ -47,6 +47,13 @@ class NliScorer(Protocol):
     """The NLI model the verifier calls: premise and hypothesis in, a probability per label out."""
 
     def score(self, premise: str, hypothesis: str) -> Mapping[str, float]:
+        ...
+
+
+class BatchNliScorer(Protocol):
+    """A scorer that can answer several pairs in one call. The local and the remote scorer both can."""
+
+    def score_batch(self, pairs: Sequence[tuple[str, str]]) -> Sequence[Mapping[str, float]]:
         ...
 
 
@@ -76,11 +83,29 @@ class VerifyOutcome:
     traces: list[dict[str, Any]] = field(default_factory=list)
 
 
+@dataclass
+class _Prepared:
+    """A claim with everything decided except, possibly, its NLI scores."""
+    claim_id: str
+    text: str
+    candidates: list[Candidate]
+    decision: Optional[Decision]  # None when the claim needs the NLI model
+    trace: dict[str, Any]
+
+
 def verify_claims(claims: Sequence[dict[str, Any]], triples: Sequence[Triple], knowledge: Knowledge,
                   verifier_version: str, nli_model: Optional[NliScorer] = None) -> VerifyOutcome:
+    """Verifies every claim, with one batched NLI call for all the claims that need the model.
+
+    The batch matters: the latency budget is for all NLI-routed claims in a note, and one forward pass over a
+    batch costs less per pair than one pass per pair (docs/gates/G1-measurements.json: 149.8 ms for a single pair
+    against 74.8 ms per pair at batch size 4).
+    """
     outcome = VerifyOutcome()
-    for claim in claims:
-        result, trace = verify_claim(claim, triples, knowledge, verifier_version, nli_model)
+    prepared = [_prepare(claim, triples, knowledge) for claim in claims]
+    scores = _score_pending([p for p in prepared if p.decision is None], knowledge, nli_model)
+    for item in prepared:
+        result, trace = _finish(item, scores.get(item.claim_id), knowledge, verifier_version)
         outcome.results.append(result)
         outcome.traces.append(trace)
     return outcome
@@ -88,7 +113,13 @@ def verify_claims(claims: Sequence[dict[str, Any]], triples: Sequence[Triple], k
 
 def verify_claim(claim: dict[str, Any], triples: Sequence[Triple], knowledge: Knowledge, verifier_version: str,
                  nli_model: Optional[NliScorer] = None) -> tuple[dict[str, Any], dict[str, Any]]:
-    """claim: dict with claim_id, claim_text, and optional entities (list of core.entities.Entity)."""
+    """One claim. The result is the same as verify_claims on a single-claim list."""
+    outcome = verify_claims([claim], triples, knowledge, verifier_version, nli_model)
+    return outcome.results[0], outcome.traces[0]
+
+
+def _prepare(claim: dict[str, Any], triples: Sequence[Triple], knowledge: Knowledge) -> _Prepared:
+    """Everything that does not need the NLI model: the entities, the candidates, and the branch that applies."""
     claim_id, text = claim["claim_id"], claim["claim_text"]
     entities = list(claim.get("entities") or link_entities(text, knowledge, offset=claim.get("char_start", 0)))
     candidates = retrieve(text, entities, triples, knowledge)
@@ -107,6 +138,7 @@ def verify_claim(claim: dict[str, Any], triples: Sequence[Triple], knowledge: Kn
     coded = [e for e in entities if e not in rx and e not in allergy_entities]
     allergy_negated = any(_negation_governs(text, e) for e in allergy_entities)
 
+    decision: Optional[Decision]
     if rx:
         decision = _medication(text, rx, allergy_triples, knowledge, trace)
     elif allergy_entities:
@@ -116,10 +148,20 @@ def verify_claim(claim: dict[str, Any], triples: Sequence[Triple], knowledge: Kn
         if coded_decision is not None:
             decision = coded_decision
         elif candidates:
-            decision = _nli(claim_id, text, candidates, knowledge, nli_model)
+            decision = None  # the NLI model settles this one
         else:
             decision = Decision(NLIClass.NEUTRAL, 1.0, None, "no_candidates")
-    trace["branch"] = decision.branch
+    trace["branch"] = decision.branch if decision is not None else None
+    return _Prepared(claim_id, text, candidates, decision, trace)
+
+
+def _finish(item: _Prepared, scores: Optional[list[dict[str, float]]], knowledge: Knowledge,
+            verifier_version: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    """The NLI decision if the claim needed one, then the severity rule, then the result."""
+    decision = item.decision
+    if decision is None:
+        decision = _nli_decision(item.claim_id, item.text, item.candidates, scores or [], knowledge)
+    item.trace["branch"] = decision.branch
 
     facts = ClaimFacts(
         nli_class=decision.nli_class,
@@ -134,7 +176,7 @@ def verify_claim(claim: dict[str, Any], triples: Sequence[Triple], knowledge: Kn
     try:
         result = VerificationResult(
             result_id=uuid.uuid4(),
-            claim_id=claim_id,
+            claim_id=item.claim_id,
             matched_fhir_ref=decision.ref,
             nli_class=decision.nli_class,
             confidence=min(max(decision.confidence, 0.0), 1.0),
@@ -143,8 +185,31 @@ def verify_claim(claim: dict[str, Any], triples: Sequence[Triple], knowledge: Kn
             verifier_version=verifier_version,
         )
     except ValidationError:
-        raise VerificationError(claim_id, "result is inconsistent with the VerificationResult contract")
-    return result.model_dump(mode="json"), trace
+        raise VerificationError(item.claim_id, "result is inconsistent with the VerificationResult contract")
+    return result.model_dump(mode="json"), item.trace
+
+
+def _score_pending(pending: Sequence[_Prepared], knowledge: Knowledge,
+                    nli_model: Optional[NliScorer]) -> dict[str, list[dict[str, float]]]:
+    """Scores every (claim, candidate) pair that needs the model. One batch, one timeout, fail closed."""
+    if not pending:
+        return {}
+    if nli_model is None:
+        raise VerificationError(pending[0].claim_id,
+                                "unresolved candidates need the NLI scorer, which is not available")
+    timeout = knowledge.thresholds.nli_timeout_seconds
+    pairs = [(verbalize(candidate.triple), item.text) for item in pending for candidate in item.candidates]
+    if hasattr(nli_model, "score_batch"):
+        rows = _score_batch(pairs, cast("BatchNliScorer", nli_model), timeout, pending[0].claim_id)
+    else:
+        rows = [_score(pending[0].claim_id, nli_model, premise, hypothesis, timeout) for premise, hypothesis in pairs]
+    scores: dict[str, list[dict[str, float]]] = {}
+    index = 0
+    for item in pending:
+        count = len(item.candidates)
+        scores[item.claim_id] = rows[index:index + count]
+        index += count
+    return scores
 
 
 def _negation_governs(text: str, entity: Entity) -> bool:
@@ -216,16 +281,15 @@ def _claimed_number(text: str, entity: Entity) -> Optional[float]:
     return float(match.group()) if match else None
 
 
-def _nli(claim_id: str, text: str, candidates: Sequence[Candidate], knowledge: Knowledge,
-         model: Optional[NliScorer]) -> Decision:
-    if model is None:
-        raise VerificationError(claim_id, "unresolved candidates need the NLI scorer, which is not available")
+def _nli_decision(claim_id: str, text: str, candidates: Sequence[Candidate], scores: Sequence[Mapping[str, float]],
+                  knowledge: Knowledge) -> Decision:
+    """The NLI branch, with the scores already computed. Contradiction outranks entailment."""
     thresholds = knowledge.thresholds
     contradiction: Optional[tuple[float, Candidate]] = None
     best: Optional[tuple[float, float, float, Candidate]] = None
-    for candidate in candidates:
-        scores = _score(claim_id, model, verbalize(candidate.triple), text, thresholds.nli_timeout_seconds)
-        entailment, neutral, contra = scores["entailment"], scores["neutral"], scores["contradiction"]
+    for candidate, candidate_scores in zip(candidates, scores):
+        entailment, neutral, contra = (candidate_scores["entailment"], candidate_scores["neutral"],
+                                        candidate_scores["contradiction"])
         if contra >= thresholds.contradiction_min and (contradiction is None or contra > contradiction[0]):
             contradiction = (contra, candidate)  # contradiction takes precedence over entailment
         if best is None or entailment > best[0]:
@@ -240,12 +304,38 @@ def _nli(claim_id: str, text: str, candidates: Sequence[Candidate], knowledge: K
                 and candidate.triple.status == "active" else set())
         return Decision(NLIClass.CONTRADICTION, contra, candidate.triple.source_ref, "nli_contradiction",
                         frozenset(kinds))
-    if best is None:  # candidates is never empty here (verify_claim checks it); fail closed if that ever changes
+    if best is None:  # candidates is never empty here (_prepare checks it); fail closed if that ever changes
         raise VerificationError(claim_id, "no candidate was scored")
     entailment, neutral, contra, candidate = best
     if entailment >= max(neutral, contra):
         return Decision(NLIClass.ENTAILMENT, entailment, candidate.triple.source_ref, "nli_entailment")
     return Decision(NLIClass.NEUTRAL, max(neutral, contra), None, "nli_neutral")
+
+
+def _score_batch(pairs: Sequence[tuple[str, str]], model: BatchNliScorer, timeout: float,
+                 claim_id: str) -> list[dict[str, float]]:
+    """One call for every pair, one timeout for the whole batch. Any failure fails closed."""
+    executor = ThreadPoolExecutor(max_workers=1)
+    try:
+        rows = executor.submit(model.score_batch, list(pairs)).result(timeout=timeout)
+    except FutureTimeout:
+        raise VerificationError(claim_id, "NLI call timed out")
+    except Exception as exc:
+        raise VerificationError(claim_id, f"NLI call failed: {type(exc).__name__}")
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+    if not isinstance(rows, list) or len(rows) != len(pairs):
+        raise VerificationError(claim_id, "NLI returned the wrong number of scores")
+    validated = []
+    for row in rows:
+        try:
+            values = {k: float(row[k]) for k in ("entailment", "neutral", "contradiction")}
+        except (KeyError, TypeError, ValueError) as exc:
+            raise VerificationError(claim_id, "NLI scores are malformed") from exc
+        if any(not 0.0 <= v <= 1.0 for v in values.values()):
+            raise VerificationError(claim_id, "NLI scores are out of range")
+        validated.append(values)
+    return validated
 
 
 def _score(claim_id: str, model: NliScorer, premise: str, hypothesis: str, timeout: float) -> dict[str, float]:
