@@ -3,7 +3,7 @@
 /* Light theme only: the severity colors are chosen and checked for contrast (at least 4.5:1) on these backgrounds. */
 :root {
   color-scheme: light;
-  --background: #ffffff;
+  --background: #f8fafc;
   --foreground: #0f172a;
 }
 
@@ -18,4 +18,19 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Keyboard focus is always visible: a 2px indigo outline with an offset, on every interactive element. */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #4338ca;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
