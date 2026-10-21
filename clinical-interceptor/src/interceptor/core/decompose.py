@@ -4,9 +4,11 @@ Med-spaCy segmentation and LLM atomic-claim decomposition are not built: their m
 10.1). This version keeps the same contract: each assertion has a type, a negation flag and character offsets.
 
 Structure, handled per line in this order:
-  1. A section header (CHIEF COMPLAINT:, HPI:, MEDICATIONS:, ALLERGIES:, ASSESSMENT & PLAN:, ...) is a context tag. It is
-     removed from the claim text and kept on each assertion as `section`. The tag lasts until the next header.
-  2. A list marker ("- ", "* ", "• ", "1. ", "2) ") is removed. Each list item is its own unit.
+  1. A section header (CHIEF COMPLAINT:, SUBJECTIVE:, OBJECTIVE:, HPI:, MEDICATIONS:, ALLERGIES:, ASSESSMENT & PLAN:, ...)
+     is a context tag. It is removed from the claim text and kept on each assertion as `section`. The tag lasts until the
+     next header.
+  2. A list marker ("- ", "* ", "• ", "1. ", "2) ") is removed. Each list item is its own unit. A label right after the
+     marker ("- Labs: HbA1c 8.2 %") tags that item only.
   3. Sentences end at . ! ? (a dot inside a number such as 12.1 does not end one).
   4. Inside a sentence, semicolons and coordinate clauses (", and " / ", but ") split it into atomic spans. A split
      needs at least two words after it, so "diabetes and hypertension" is one span.
@@ -24,8 +26,10 @@ from .models import Assertion, AssertionType
 LINE = re.compile(r"[^\n]+")
 HEADER = re.compile(
     r"[ \t]*(?P<name>chief complaint|history of present illness|hpi|past medical history|pmh|social history"
-    r"|family history|review of systems|ros|allergies|medications|meds|labs|vitals|physical exam"
-    r"|assessment\s*(?:&|and)\s*plan|assessment|plan|hospital course|impression|discharge diagnos[ie]s)"
+    r"|family history|review of systems|ros|allergies|current medications|home medications|discharge medications"
+    r"|medications|meds|labs|lab results|vitals|physical exam|physical examination|subjective|objective|imaging"
+    r"|procedures|diagnos[ie]s|problem list|assessment\s*(?:&|and)\s*plan|assessment|plan|hospital course|impression"
+    r"|discharge diagnos[ie]s)"
     r"[ \t]*:[ \t]*",
     re.IGNORECASE,
 )
@@ -36,11 +40,14 @@ SENTENCE = re.compile(r"(?:[^.!?\n]|(?<=\d)\.(?=\d))+[.!?]?")
 SPLIT = re.compile(r";|,[ \t]+(?:and|but)[ \t]+", re.IGNORECASE)
 NEGATION = re.compile(r"\b(no|not|denies|denied|without|negative for)\b", re.IGNORECASE)
 DOSE = re.compile(r"\b\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml|units?)\b", re.IGNORECASE)
+# The name may contain digits ("HbA1c"). The value needs a ":" or a space before it, so "HbA1c" is never read as "HbA"+"1".
 LAB = re.compile(
-    r"^\s*(?P<name>[A-Za-z][A-Za-z ]{0,30}?)\s*:?\s*(?P<value>-?\d+(?:\.\d+)?)\s*(?P<unit>[A-Za-z%/]+)?",
+    r"^\s*(?P<name>[A-Za-z][A-Za-z0-9 ]{0,30}?)(?::\s*|\s+)(?P<value>-?\d+(?:\.\d+)?)\s*(?P<unit>[A-Za-z%/]+)?",
 )
 SECTION_ALIASES = {"meds": "medications", "hpi": "history of present illness", "pmh": "past medical history",
-                   "ros": "review of systems"}
+                   "ros": "review of systems", "current medications": "medications",
+                   "home medications": "medications", "discharge medications": "medications",
+                   "lab results": "labs"}
 
 
 def section_key(name: str) -> str:
@@ -70,11 +77,17 @@ def decompose(text: str, hints: Optional[dict[str, AssertionType]] = None) -> li
         marker = LIST_MARK.match(text, position, line_end)
         if marker:
             position = marker.end()
+        item_section = section
+        if not header:
+            label = HEADER.match(text, position, line_end)
+            if label:
+                item_section = section_key(label.group("name"))
+                position = label.end()
 
         for sentence in SENTENCE.finditer(text, position, line_end):
             for start, end in _clauses(text, sentence.start(), sentence.end()):
                 body = text[start:end]
-                atype = _classify(section, body, body.lower(), hints)
+                atype = _classify(item_section, body, body.lower(), hints)
                 lab = LAB.match(body) if atype == AssertionType.OBSERVATION_LAB else None
                 assertions.append(
                     Assertion(
@@ -87,7 +100,7 @@ def decompose(text: str, hints: Optional[dict[str, AssertionType]] = None) -> li
                         name=lab.group("name").strip() if lab else None,
                         value=float(lab.group("value")) if lab else None,
                         unit=lab.group("unit") if lab else None,
-                        section=section,
+                        section=item_section,
                     )
                 )
     return assertions

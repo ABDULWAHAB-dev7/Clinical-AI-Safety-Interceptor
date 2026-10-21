@@ -82,6 +82,25 @@ class DecomposeTests(unittest.TestCase):
     def test_coordinate_split_needs_a_clause_after_it(self):
         self.assertEqual(len(decompose("Denies pain, and fever.")), 1)
 
+    def test_soap_headers_are_tags_not_claim_text(self):
+        text = "SUBJECTIVE: Cough for three days.\nOBJECTIVE:\n- BP 142/88"
+        spans = decompose(text)
+        self.assertEqual([a.text for a in spans], ["Cough for three days.", "BP 142/88"])
+        self.assertEqual([a.section for a in spans], ["subjective", "objective"])
+        for a in spans:
+            self.assertEqual(text[a.span_start:a.span_end], a.text)
+
+    def test_label_after_bullet_tags_only_that_item(self):
+        text = "- Labs: HbA1c 8.2 %\n- Denies cough."
+        lab, negated = decompose(text)
+        self.assertEqual((lab.type, lab.name, lab.value, lab.unit), (AssertionType.OBSERVATION_LAB, "HbA1c", 8.2, "%"))
+        self.assertEqual((negated.section, negated.type), (None, AssertionType.NEGATED_FINDING))
+
+    def test_current_medications_header_is_a_medication_section(self):
+        a = decompose("CURRENT MEDICATIONS: lisinopril 10 mg daily.")[0]
+        self.assertEqual((a.section, a.type), ("medications", AssertionType.MEDICATION))
+        self.assertEqual(a.text, "lisinopril 10 mg daily.")
+
     def test_offsets_round_trip_on_a_messy_note(self):
         text = (
             "CHIEF COMPLAINT: Follow-up; HPI: 62 y/o with T2DM, seen today.\n"

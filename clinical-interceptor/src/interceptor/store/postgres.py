@@ -120,7 +120,7 @@ def upsert_note(conn, *, patient_pseudo_id, encounter_pseudo_id, source_system, 
     return row[0]
 
 
-_POOLS = {}  # one pool per (DSN, connect timeout), shared by every store in the process
+_POOLS: dict[tuple[str, float, int], ConnectionPool] = {}  # one pool per (DSN, connect timeout), shared by every store in the process
 _POOLS_LOCK = threading.Lock()
 
 
