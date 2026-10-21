@@ -1,0 +1,1474 @@
+{
+  "summary": {
+    "claims_total": 95,
+    "claims_inside_seeded": 8,
+    "claims_clean": 87,
+    "flagging": {
+      "tp": 8,
+      "fp": 75,
+      "fn": 0,
+      "precision": 0.0963855421686747,
+      "recall": 1.0,
+      "f1": 0.17582417582417584
+    },
+    "blocking_claim": {
+      "tp": 4,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.6666666666666666,
+      "recall": 1.0,
+      "f1": 0.8
+    },
+    "blocking_document": {
+      "tp": 4,
+      "fp": 1,
+      "fn": 0,
+      "precision": 0.8,
+      "recall": 1.0,
+      "f1": 0.8888888888888888
+    },
+    "clean_flagged": 75,
+    "clean_flagged_medication": 6,
+    "clean_medication_total": 6,
+    "clean_blocked": 2,
+    "seeded": [
+      {
+        "case": "case-04",
+        "kind": "lab_value_mismatch",
+        "expected": "WARNING",
+        "sentence": "HbA1c was 6.1% on 2026-09-02.",
+        "claims_in_span": 1,
+        "severities": [
+          "WARNING"
+        ],
+        "caught_flag": true,
+        "caught_block": false
+      },
+      {
+        "case": "case-05",
+        "kind": "denied_diagnosis",
+        "expected": "CRITICAL",
+        "sentence": "No history of type 2 diabetes.",
+        "claims_in_span": 1,
+        "severities": [
+          "CRITICAL"
+        ],
+        "caught_flag": true,
+        "caught_block": true
+      },
+      {
+        "case": "case-06",
+        "kind": "denied_allergy",
+        "expected": "CRITICAL",
+        "sentence": "Patient denies known drug allergies.",
+        "claims_in_span": 1,
+        "severities": [
+          "CRITICAL"
+        ],
+        "caught_flag": true,
+        "caught_block": true
+      },
+      {
+        "case": "case-07",
+        "kind": "dose_over_limit",
+        "expected": "CRITICAL",
+        "sentence": "Metformin 3000 mg daily.",
+        "claims_in_span": 1,
+        "severities": [
+          "CRITICAL"
+        ],
+        "caught_flag": true,
+        "caught_block": true
+      },
+      {
+        "case": "case-08",
+        "kind": "allergy_conflict_medication",
+        "expected": "CRITICAL",
+        "sentence": "Start amoxicillin 500 mg three times daily.",
+        "claims_in_span": 1,
+        "severities": [
+          "CRITICAL"
+        ],
+        "caught_flag": true,
+        "caught_block": true
+      },
+      {
+        "case": "case-09",
+        "kind": "ungrounded_history",
+        "expected": "WARNING",
+        "sentence": "History of stroke in 2015.",
+        "claims_in_span": 1,
+        "severities": [
+          "WARNING"
+        ],
+        "caught_flag": true,
+        "caught_block": false
+      },
+      {
+        "case": "case-10",
+        "kind": "lab_value_mismatch",
+        "expected": "WARNING",
+        "sentence": "HbA1c was 9.8% on 2026-08-12.",
+        "claims_in_span": 1,
+        "severities": [
+          "WARNING"
+        ],
+        "caught_flag": true,
+        "caught_block": false
+      },
+      {
+        "case": "case-10",
+        "kind": "ungrounded_history",
+        "expected": "WARNING",
+        "sentence": "History of stroke in 2015.",
+        "claims_in_span": 1,
+        "severities": [
+          "WARNING"
+        ],
+        "caught_flag": true,
+        "caught_block": false
+      }
+    ],
+    "documents": 10,
+    "documents_expected_block": 4,
+    "documents_blocked": 5,
+    "fail_closed": 0
+  },
+  "cases": [
+    {
+      "case": "case-01",
+      "chart": "A",
+      "note_type": "SOAP progress note (clean)",
+      "claim_count": 14,
+      "skipped_sentences": 0,
+      "seeded": [],
+      "claims": [
+        {
+          "claim_id": "clm_95ed9aa5d088",
+          "claim_text": "SOAP PROGRESS NOTE",
+          "char_start": 0,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_917363c8302a",
+          "claim_text": "S: A 58-year-old woman returns for follow-up of type 2 diabetes",
+          "char_start": 20,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_b8ba7e676853",
+          "claim_text": "She reports fatigue and occasional nocturia",
+          "char_start": 85,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_bc75f1c5968a",
+          "claim_text": "She has no chest pain, no shortness of breath",
+          "char_start": 130,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_dfcfee16a5dc",
+          "claim_text": "no fever",
+          "char_start": 181,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_6b69c27ca462",
+          "claim_text": "O: Blood pressure 128/78, heart rate 74, afebrile",
+          "char_start": 192,
+          "severity": "WARNING",
+          "rule": "contradiction",
+          "nli_class": "CONTRADICTION",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_4338d70cdf16",
+          "claim_text": "Weight 84 kg",
+          "char_start": 243,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_5b79b9036776",
+          "claim_text": "Feet examined, with no ulcers and intact pedal pulses",
+          "char_start": 257,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_25f54acf9938",
+          "claim_text": "HbA1c 8.2 % on 2026-09-02",
+          "char_start": 319,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_78a5ab70b805",
+          "claim_text": "A: Type 2 diabetes mellitus, not at goal",
+          "char_start": 347,
+          "severity": "CRITICAL",
+          "rule": "contradiction_high_risk",
+          "nli_class": "CONTRADICTION",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_16a3db869cdc",
+          "claim_text": "Renal function was not rechecked at this visit",
+          "char_start": 389,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_8b26cc1e3cf2",
+          "claim_text": "P: Continue the current diet and walking program",
+          "char_start": 438,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_5cb362535e42",
+          "claim_text": "Recheck HbA1c in three months",
+          "char_start": 488,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_aa622a913400",
+          "claim_text": "Return sooner for symptoms of high blood sugar",
+          "char_start": 519,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        }
+      ]
+    },
+    {
+      "case": "case-02",
+      "chart": "A",
+      "note_type": "Discharge summary (clean)",
+      "claim_count": 11,
+      "skipped_sentences": 0,
+      "seeded": [],
+      "claims": [
+        {
+          "claim_id": "clm_23768b853abc",
+          "claim_text": "DISCHARGE SUMMARY",
+          "char_start": 0,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_0ea0e3851f93",
+          "claim_text": "Admission reason: Community-acquired pneumonia of the right lower lobe",
+          "char_start": 19,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_052130ea60dc",
+          "claim_text": "The hospital course was uncomplicated, with clinical improvement after three days of intravenous levofloxacin",
+          "char_start": 91,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_ece0349a035e",
+          "claim_text": "Community-acquired pneumonia, resolved",
+          "char_start": 214,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_43dbda0af594",
+          "claim_text": "Type 2 diabetes mellitus, stable",
+          "char_start": 254,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_441fa05d4ac3",
+          "claim_text": "Penicillin (rash)",
+          "char_start": 300,
+          "severity": "WARNING",
+          "rule": "contradiction",
+          "nli_class": "CONTRADICTION",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_2ba69d18e37d",
+          "claim_text": "Avoid penicillin-class antibiotics",
+          "char_start": 319,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_8556e9968430",
+          "claim_text": "Medications at discharge: Metformin 500 mg twice daily",
+          "char_start": 356,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": true,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_97f90e7b03bb",
+          "claim_text": "Levofloxacin 750 mg daily for five more days",
+          "char_start": 412,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_3527e5c4ade4",
+          "claim_text": "Follow-up: Primary care in one week",
+          "char_start": 459,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_34bd51151932",
+          "claim_text": "Repeat chest X-ray in six weeks",
+          "char_start": 496,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        }
+      ]
+    },
+    {
+      "case": "case-03",
+      "chart": "C",
+      "note_type": "Outpatient clinic note (clean)",
+      "claim_count": 8,
+      "skipped_sentences": 0,
+      "seeded": [],
+      "claims": [
+        {
+          "claim_id": "clm_f8bce35352d5",
+          "claim_text": "OUTPATIENT CLINIC NOTE",
+          "char_start": 0,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_3e65585d5b36",
+          "claim_text": "A 61-year-old man is seen for diabetes review",
+          "char_start": 29,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_73b528d4d588",
+          "claim_text": "He feels well overall and has been checking his fasting glucose at home",
+          "char_start": 76,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_e183a3e35518",
+          "claim_text": "Type 2 diabetes mellitus, with improving control",
+          "char_start": 162,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_c84c9d1ba11f",
+          "claim_text": "HbA1c 7.4 % on 2026-08-12",
+          "char_start": 219,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_7fed62d57d8e",
+          "claim_text": "Continue metformin 500 mg twice daily",
+          "char_start": 253,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": true,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_294e59c6b542",
+          "claim_text": "Dietary counseling was given",
+          "char_start": 292,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_f84fe8672727",
+          "claim_text": "The next visit is in three months",
+          "char_start": 322,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        }
+      ]
+    },
+    {
+      "case": "case-04",
+      "chart": "A",
+      "note_type": "Progress note",
+      "claim_count": 9,
+      "skipped_sentences": 0,
+      "seeded": [
+        {
+          "kind": "lab_value_mismatch",
+          "expected": "WARNING",
+          "sentence": "HbA1c was 6.1% on 2026-09-02.",
+          "chart_fact": "HbA1c 8.2 % on 2026-09-02",
+          "start": 250,
+          "end": 279
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "clm_1057e92ec2c7",
+          "claim_text": "PROGRESS NOTE",
+          "char_start": 0,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_bc5685725b0c",
+          "claim_text": "A 64-year-old man with type 2 diabetes reports good adherence to his medicines",
+          "char_start": 27,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_94233f26c468",
+          "claim_text": "He denies hypoglycemia",
+          "char_start": 107,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_1e62ebcbbd37",
+          "claim_text": "Vital signs are within normal limits",
+          "char_start": 143,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_d0464433a93f",
+          "claim_text": "Foot examination is unremarkable",
+          "char_start": 181,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_eb41c11577b4",
+          "claim_text": "Labs were reviewed at this visit",
+          "char_start": 216,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_581de80573d0",
+          "claim_text": "HbA1c was 6.1% on 2026-09-02",
+          "char_start": 250,
+          "severity": "WARNING",
+          "rule": "contradiction",
+          "nli_class": "CONTRADICTION",
+          "medication": false,
+          "seeded": "lab_value_mismatch",
+          "expected": "WARNING",
+          "seeded_span": [
+            250,
+            279
+          ]
+        },
+        {
+          "claim_id": "clm_271ff33dd8d3",
+          "claim_text": "Diabetes is managed with lifestyle measures and metformin",
+          "char_start": 293,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": true,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_13789f9edc9e",
+          "claim_text": "Continue current therapy and review diet at the next visit",
+          "char_start": 359,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        }
+      ]
+    },
+    {
+      "case": "case-05",
+      "chart": "A",
+      "note_type": "History and physical",
+      "claim_count": 11,
+      "skipped_sentences": 0,
+      "seeded": [
+        {
+          "kind": "denied_diagnosis",
+          "expected": "CRITICAL",
+          "sentence": "No history of type 2 diabetes.",
+          "chart_fact": "Active type 2 diabetes mellitus (SNOMED 44054006)",
+          "start": 235,
+          "end": 265
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "clm_4335c97dfe45",
+          "claim_text": "HISTORY AND PHYSICAL",
+          "char_start": 0,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_7f69817921c6",
+          "claim_text": "A 52-year-old woman presents with two weeks of intermittent headaches",
+          "char_start": 27,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_0b34a8816916",
+          "claim_text": "She reports no visual changes and no weakness",
+          "char_start": 98,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_d891d32da120",
+          "claim_text": "Hypertension treated with lifestyle changes",
+          "char_start": 168,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_ace0a3dd9419",
+          "claim_text": "Appendectomy in 1998",
+          "char_start": 213,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_103ba57e352c",
+          "claim_text": "No history of type 2 diabetes",
+          "char_start": 235,
+          "severity": "CRITICAL",
+          "rule": "contradiction_high_risk",
+          "nli_class": "CONTRADICTION",
+          "medication": false,
+          "seeded": "denied_diagnosis",
+          "expected": "CRITICAL",
+          "seeded_span": [
+            235,
+            265
+          ]
+        },
+        {
+          "claim_id": "clm_6f55ccbe2307",
+          "claim_text": "Blood pressure 138/86",
+          "char_start": 282,
+          "severity": "WARNING",
+          "rule": "contradiction",
+          "nli_class": "CONTRADICTION",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_3b57eee7b411",
+          "claim_text": "The neurological exam is non-focal",
+          "char_start": 305,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_6aac879cfd9f",
+          "claim_text": "Tension-type headache, most likely",
+          "char_start": 354,
+          "severity": "CRITICAL",
+          "rule": "contradiction_high_risk",
+          "nli_class": "CONTRADICTION",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_928756c50de3",
+          "claim_text": "Acetaminophen as needed",
+          "char_start": 397,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_e64bcf3bcbf9",
+          "claim_text": "Return if the headaches worsen",
+          "char_start": 422,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        }
+      ]
+    },
+    {
+      "case": "case-06",
+      "chart": "B",
+      "note_type": "Allergy review",
+      "claim_count": 7,
+      "skipped_sentences": 0,
+      "seeded": [
+        {
+          "kind": "denied_allergy",
+          "expected": "CRITICAL",
+          "sentence": "Patient denies known drug allergies.",
+          "chart_fact": "Active penicillin allergy (SNOMED 91936005)",
+          "start": 177,
+          "end": 213
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "clm_9d837fba7014",
+          "claim_text": "ALLERGY REVIEW",
+          "char_start": 0,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_825094a4a0bf",
+          "claim_text": "A 44-year-old man is seen to review his allergy history before a dental procedure",
+          "char_start": 28,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_931d2838db83",
+          "claim_text": "He recalls a rash after taking penicillin as a child",
+          "char_start": 111,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_26a9442a60cc",
+          "claim_text": "Patient denies known drug allergies",
+          "char_start": 177,
+          "severity": "CRITICAL",
+          "rule": "contradiction_high_risk",
+          "nli_class": "CONTRADICTION",
+          "medication": false,
+          "seeded": "denied_allergy",
+          "expected": "CRITICAL",
+          "seeded_span": [
+            177,
+            213
+          ]
+        },
+        {
+          "claim_id": "clm_0d0e77c70133",
+          "claim_text": "Allergy history reviewed with the patient",
+          "char_start": 227,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_6b20736b9d27",
+          "claim_text": "Record the allergy history in the chart",
+          "char_start": 277,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_df313589f398",
+          "claim_text": "Confirm at the next visit",
+          "char_start": 318,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        }
+      ]
+    },
+    {
+      "case": "case-07",
+      "chart": "A",
+      "note_type": "Medication reconciliation",
+      "claim_count": 7,
+      "skipped_sentences": 0,
+      "seeded": [
+        {
+          "kind": "dose_over_limit",
+          "expected": "CRITICAL",
+          "sentence": "Metformin 3000 mg daily.",
+          "chart_fact": "Metformin single-dose ceiling 1000 mg (verifier knowledge file)",
+          "start": 40,
+          "end": 64
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "clm_baabcbacaece",
+          "claim_text": "MEDICATION RECONCILIATION",
+          "char_start": 0,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_214281c29345",
+          "claim_text": "Metformin 3000 mg daily",
+          "char_start": 40,
+          "severity": "CRITICAL",
+          "rule": "contradiction_high_risk",
+          "nli_class": "CONTRADICTION",
+          "medication": true,
+          "seeded": "dose_over_limit",
+          "expected": "CRITICAL",
+          "seeded_span": [
+            40,
+            64
+          ]
+        },
+        {
+          "claim_id": "clm_753c082eaaca",
+          "claim_text": "Lisinopril 10 mg once daily",
+          "char_start": 65,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": true,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_761290e22764",
+          "claim_text": "Reconciled with the patient, who confirms adherence to the list above",
+          "char_start": 95,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_939851b3e8a1",
+          "claim_text": "No new medicines were started at this visit",
+          "char_start": 166,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_0041489f3395",
+          "claim_text": "Continue the reconciled list",
+          "char_start": 218,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_1d7615305d23",
+          "claim_text": "Review at the next routine visit",
+          "char_start": 248,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        }
+      ]
+    },
+    {
+      "case": "case-08",
+      "chart": "A",
+      "note_type": "Urgent care note",
+      "claim_count": 11,
+      "skipped_sentences": 0,
+      "seeded": [
+        {
+          "kind": "allergy_conflict_medication",
+          "expected": "CRITICAL",
+          "sentence": "Start amoxicillin 500 mg three times daily.",
+          "chart_fact": "Active penicillin allergy (SNOMED 91936005); amoxicillin is a penicillin",
+          "start": 312,
+          "end": 355
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "clm_2d125a62a2ba",
+          "claim_text": "URGENT CARE NOTE",
+          "char_start": 0,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_aacbf702695a",
+          "claim_text": "A 35-year-old woman presents with sore throat, fever",
+          "char_start": 23,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_1b2484800ef1",
+          "claim_text": "tender cervical nodes for two days",
+          "char_start": 81,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_3f0f46827c09",
+          "claim_text": "She can swallow liquids without difficulty",
+          "char_start": 117,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_70fbcd27ade1",
+          "claim_text": "Exam: Temperature 38.4 C",
+          "char_start": 162,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_4cd8544c3c35",
+          "claim_text": "Tonsils are swollen with exudate",
+          "char_start": 188,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_0f2782a5f7fd",
+          "claim_text": "No rash",
+          "char_start": 222,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_2a02f17a4613",
+          "claim_text": "Probable streptococcal pharyngitis",
+          "char_start": 244,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_f541d5c15bab",
+          "claim_text": "Acetaminophen for fever",
+          "char_start": 287,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_b1943f227eac",
+          "claim_text": "Start amoxicillin 500 mg three times daily",
+          "char_start": 312,
+          "severity": "CRITICAL",
+          "rule": "drug_allergy_conflict",
+          "nli_class": "NEUTRAL",
+          "medication": true,
+          "seeded": "allergy_conflict_medication",
+          "expected": "CRITICAL",
+          "seeded_span": [
+            312,
+            355
+          ]
+        },
+        {
+          "claim_id": "clm_c01c93c2c0bb",
+          "claim_text": "Return if breathing becomes difficult or the fever persists beyond three days",
+          "char_start": 356,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        }
+      ]
+    },
+    {
+      "case": "case-09",
+      "chart": "A",
+      "note_type": "Follow-up visit",
+      "claim_count": 8,
+      "skipped_sentences": 0,
+      "seeded": [
+        {
+          "kind": "ungrounded_history",
+          "expected": "WARNING",
+          "sentence": "History of stroke in 2015.",
+          "chart_fact": "No stroke in the record",
+          "start": 181,
+          "end": 207
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "clm_9279fc411704",
+          "claim_text": "FOLLOW-UP VISIT",
+          "char_start": 0,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_f10886cf75d2",
+          "claim_text": "A 67-year-old man with type 2 diabetes is seen for a routine check",
+          "char_start": 22,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_244905e39faf",
+          "claim_text": "He reports no new symptoms",
+          "char_start": 90,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_352c05812063",
+          "claim_text": "Hypertension, controlled on medication",
+          "char_start": 141,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_c4267407159d",
+          "claim_text": "History of stroke in 2015",
+          "char_start": 181,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": "ungrounded_history",
+          "expected": "WARNING",
+          "seeded_span": [
+            181,
+            207
+          ]
+        },
+        {
+          "claim_id": "clm_776a4f45999a",
+          "claim_text": "HbA1c 8.2 % on 2026-09-02",
+          "char_start": 215,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_0898cdadd49c",
+          "claim_text": "Type 2 diabetes, stable",
+          "char_start": 255,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_7990a823b54b",
+          "claim_text": "Continue metformin 500 mg twice daily and recheck in three months",
+          "char_start": 287,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": true,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        }
+      ]
+    },
+    {
+      "case": "case-10",
+      "chart": "C",
+      "note_type": "Consultation note",
+      "claim_count": 9,
+      "skipped_sentences": 0,
+      "seeded": [
+        {
+          "kind": "lab_value_mismatch",
+          "expected": "WARNING",
+          "sentence": "HbA1c was 9.8% on 2026-08-12.",
+          "chart_fact": "HbA1c 7.4 % on 2026-08-12",
+          "start": 201,
+          "end": 230
+        },
+        {
+          "kind": "ungrounded_history",
+          "expected": "WARNING",
+          "sentence": "History of stroke in 2015.",
+          "chart_fact": "No stroke in the record",
+          "start": 140,
+          "end": 166
+        }
+      ],
+      "claims": [
+        {
+          "claim_id": "clm_4286ccb2788b",
+          "claim_text": "CONSULTATION NOTE",
+          "char_start": 0,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_5356e5afe3f3",
+          "claim_text": "Reason for consult: Diabetes review at the request of the primary team",
+          "char_start": 19,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_b16df290f3b6",
+          "claim_text": "Type 2 diabetes mellitus",
+          "char_start": 114,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_f5d9fb3566ce",
+          "claim_text": "History of stroke in 2015",
+          "char_start": 140,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": "ungrounded_history",
+          "expected": "WARNING",
+          "seeded_span": [
+            140,
+            166
+          ]
+        },
+        {
+          "claim_id": "clm_24e8f33ee75e",
+          "claim_text": "HbA1c 7.4 % on 2026-08-12",
+          "char_start": 174,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_044a20cbdf38",
+          "claim_text": "HbA1c was 9.8% on 2026-08-12",
+          "char_start": 201,
+          "severity": "WARNING",
+          "rule": "contradiction",
+          "nli_class": "CONTRADICTION",
+          "medication": false,
+          "seeded": "lab_value_mismatch",
+          "expected": "WARNING",
+          "seeded_span": [
+            201,
+            230
+          ]
+        },
+        {
+          "claim_id": "clm_b8f865801914",
+          "claim_text": "Type 2 diabetes with HbA1c above target",
+          "char_start": 244,
+          "severity": "SAFE",
+          "rule": "entailed",
+          "nli_class": "ENTAILMENT",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_9289d8cb521d",
+          "claim_text": "Recommendations: Adjust the metformin dose at the discretion of the primary team",
+          "char_start": 286,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": true,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        },
+        {
+          "claim_id": "clm_07be41c0cdec",
+          "claim_text": "Recheck HbA1c in three months",
+          "char_start": 368,
+          "severity": "WARNING",
+          "rule": "unsupported_clinical",
+          "nli_class": "NEUTRAL",
+          "medication": false,
+          "seeded": null,
+          "expected": null,
+          "seeded_span": null
+        }
+      ]
+    }
+  ]
+}

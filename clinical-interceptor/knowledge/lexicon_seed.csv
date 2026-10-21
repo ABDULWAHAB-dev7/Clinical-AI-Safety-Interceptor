@@ -1,13 +1,13 @@
 # REQUIRES CLINICAL REVIEW. clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY. Seed lexicon, not a terminology source.
-# Code sources: RxNorm amoxicillin 723, lisinopril 29046, metformin 6809 verified on RxNav 2026-10-20. LOINC 4548-4 (HbA1c),
-# SNOMED CT 44054006 and 416098002 are not verified in this session.
-# Columns: surface (lowercase), system (snomed|loinc|rxnorm), code, display
-surface,system,code,display
-drug allergies,snomed,416098002,Drug allergy
-drug allergy,snomed,416098002,Drug allergy
-type 2 diabetes,snomed,44054006,Diabetes mellitus type 2
-hba1c,loinc,4548-4,Hemoglobin A1c/Hemoglobin.total in Blood
-hemoglobin a1c,loinc,4548-4,Hemoglobin A1c/Hemoglobin.total in Blood
-amoxicillin,rxnorm,723,Amoxicillin
-metformin,rxnorm,6809,Metformin
-lisinopril,rxnorm,29046,Lisinopril
+# Columns: surface (lowercase), system (snomed|loinc|rxnorm), code, display, source
+# source: what the code was checked against. RxNav codes were looked up on RxNav (rxnav.nlm.nih.gov) on 2026-10-20.
+# SNOMED CT and LOINC codes below were not checked in this session and must be verified before use.
+surface,system,code,display,source
+drug allergies,snomed,416098002,Drug allergy,not verified this session
+drug allergy,snomed,416098002,Drug allergy,not verified this session
+type 2 diabetes,snomed,44054006,Diabetes mellitus type 2,not verified this session
+hba1c,loinc,4548-4,Hemoglobin A1c/Hemoglobin.total in Blood,not verified this session
+hemoglobin a1c,loinc,4548-4,Hemoglobin A1c/Hemoglobin.total in Blood,not verified this session
+amoxicillin,rxnorm,723,Amoxicillin,RxNav verified 2026-10-20
+metformin,rxnorm,6809,Metformin,RxNav verified 2026-10-20
+lisinopril,rxnorm,29046,Lisinopril,RxNav verified 2026-10-20

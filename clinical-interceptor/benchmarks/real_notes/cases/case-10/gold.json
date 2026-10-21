@@ -1,0 +1,11 @@
+{
+  "case_id": "case-10",
+  "chart": "C",
+  "note_type": "Consultation note",
+  "seeded": [
+    {"sentence": "HbA1c was 9.8% on 2026-08-12.", "kind": "lab_value_mismatch",
+     "chart_fact": "HbA1c 7.4 % on 2026-08-12", "expected": "WARNING"},
+    {"sentence": "History of stroke in 2015.", "kind": "ungrounded_history",
+     "chart_fact": "No stroke in the record", "expected": "WARNING"}
+  ]
+}

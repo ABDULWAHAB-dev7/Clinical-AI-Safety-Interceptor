@@ -1,0 +1,9 @@
+{
+  "case_id": "case-08",
+  "chart": "A",
+  "note_type": "Urgent care note",
+  "seeded": [
+    {"sentence": "Start amoxicillin 500 mg three times daily.", "kind": "allergy_conflict_medication",
+     "chart_fact": "Active penicillin allergy (SNOMED 91936005); amoxicillin is a penicillin", "expected": "CRITICAL"}
+  ]
+}

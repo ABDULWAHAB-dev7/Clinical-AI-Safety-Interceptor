@@ -1,0 +1,9 @@
+{
+  "case_id": "case-07",
+  "chart": "A",
+  "note_type": "Medication reconciliation",
+  "seeded": [
+    {"sentence": "Metformin 3000 mg daily.", "kind": "dose_over_limit",
+     "chart_fact": "Metformin single-dose ceiling 1000 mg (verifier knowledge file)", "expected": "CRITICAL"}
+  ]
+}

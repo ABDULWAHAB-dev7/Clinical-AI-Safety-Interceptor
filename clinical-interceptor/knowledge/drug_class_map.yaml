@@ -21,4 +21,4 @@ rule_citations:
   - rule: "allergy_classes 91936005"
     source_citation: "SNOMED CT 91936005 (Allergy to penicillin). Code not verified this session. Class mapping is a project placeholder."
   - rule: "ingredient_classes 723"
-    source_citation: "RxNorm RxCUI 723 (amoxicillin), verified on RxNav 2026-10-20. Class 'penicillin' is a project placeholder; the beta-lactam cross-reactivity mapping is NOT yet sourced."
+    source_citation: "RxNorm RxCUI 723 (amoxicillin), verified on RxNav 2026-10-20. Class 'penicillin' is a project placeholder. Cross-reactivity: Khan DA et al., J Allergy Clin Immunol 2022;150:1333-93 (2022 drug allergy practice parameter), as quoted in PMC11609518 (not the original): a non-cross-reactive cephalosporin can be given without testing to patients with a penicillin anaphylaxis history, and reactions follow the R1 side chain. The verifier applies no cephalosporin rule yet."

@@ -1,0 +1,8 @@
+MEDICATION RECONCILIATION
+
+Medications: Metformin 3000 mg daily.
+Lisinopril 10 mg once daily.
+
+Reconciled with the patient, who confirms adherence to the list above. No new medicines were started at this visit.
+
+Plan: Continue the reconciled list. Review at the next routine visit.

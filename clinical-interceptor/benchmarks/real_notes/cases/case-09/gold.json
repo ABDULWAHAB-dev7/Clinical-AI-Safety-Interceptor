@@ -1,0 +1,9 @@
+{
+  "case_id": "case-09",
+  "chart": "A",
+  "note_type": "Follow-up visit",
+  "seeded": [
+    {"sentence": "History of stroke in 2015.", "kind": "ungrounded_history",
+     "chart_fact": "No stroke in the record", "expected": "WARNING"}
+  ]
+}

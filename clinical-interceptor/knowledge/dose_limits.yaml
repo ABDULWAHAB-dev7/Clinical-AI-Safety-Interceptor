@@ -1,22 +1,21 @@
-# REQUIRES CLINICAL REVIEW. clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY
+# REQUIRES CLINICAL REVIEW. clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY. Not clinical guidance.
 #
-# These two ceilings are PLACEHOLDERS from the project's tests. No FDA DailyMed label was retrieved for them, so they
-# are NOT clinical guidance. The DailyMed lookup on 2026-10-20 did not return the amoxicillin label, and the lisinopril
-# result was a combination product. Replace each entry with a label-cited value and a clinical review before any use.
+# Dose ceilings from the FDA DailyMed prescribing information (public domain US drug labels). Each entry records the
+# label and the exact wording used. Values marked "not sourced" have no label text behind them and must not be relied on.
+# Verified against the label text retrieved on 2026-10-21 (WebFetch of DailyMed) unless the citation says otherwise.
 #
-# Keyed by RxNorm ingredient code. Units are milligrams. RxCUI codes were verified on RxNav (rxnav.nlm.nih.gov) on
-# 2026-10-20: amoxicillin 723, metformin 6809.
+# Keyed by RxNorm ingredient code. Units are milligrams.
 clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY
 limits:
   "723":
     name: amoxicillin
-    max_single_mg: 1000
-    max_daily_mg: 3000
-    source_citation: "UNVERIFIED placeholder from project tests. RxCUI 723 verified on RxNav. No FDA label ceiling retrieved."
+    max_single_mg: 875
+    max_daily_mg: 1750
+    source_citation: "DailyMed amoxicillin capsule label, setid 80a04b8a-110e-0aea-e053-2a91aa0ad057, updated 2025-02-06. Highlights: 'In adults, 750 to 1750 mg/day in divided doses every 8 to 12 hours' (verified by fetch). Single dose 875 mg from Section 2.1 Table 1 (severe regimen 875 mg every 12 hours) was read from a search summary of the label, not fetched verbatim."
     clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY
   "6809":
     name: metformin
     max_single_mg: 1000
     max_daily_mg: 2550
-    source_citation: "UNVERIFIED placeholder from project tests. RxCUI 6809 verified on RxNav. No FDA label ceiling retrieved."
+    source_citation: "DailyMed metformin hydrochloride tablet label, setid 397c2bf4-35be-4e75-b5a6-426e3fa09548, updated 2025-11-06. 'The maximum recommended daily dose of metformin hydrochloride is 2550 mg in adults' (verified by fetch). The single-dose ceiling of 1000 mg is NOT sourced from this label."
     clinical_review_status: OPEN_PUBLIC_REFERENCE_ONLY

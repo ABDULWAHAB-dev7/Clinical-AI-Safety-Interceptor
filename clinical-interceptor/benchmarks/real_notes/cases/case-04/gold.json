@@ -1,0 +1,9 @@
+{
+  "case_id": "case-04",
+  "chart": "A",
+  "note_type": "Progress note",
+  "seeded": [
+    {"sentence": "HbA1c was 6.1% on 2026-09-02.", "kind": "lab_value_mismatch",
+     "chart_fact": "HbA1c 8.2 % on 2026-09-02", "expected": "WARNING"}
+  ]
+}

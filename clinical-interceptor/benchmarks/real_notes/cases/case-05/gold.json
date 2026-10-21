@@ -1,0 +1,9 @@
+{
+  "case_id": "case-05",
+  "chart": "A",
+  "note_type": "History and physical",
+  "seeded": [
+    {"sentence": "No history of type 2 diabetes.", "kind": "denied_diagnosis",
+     "chart_fact": "Active type 2 diabetes mellitus (SNOMED 44054006)", "expected": "CRITICAL"}
+  ]
+}

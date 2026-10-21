@@ -1,0 +1,9 @@
+{
+  "case_id": "case-06",
+  "chart": "B",
+  "note_type": "Allergy review",
+  "seeded": [
+    {"sentence": "Patient denies known drug allergies.", "kind": "denied_allergy",
+     "chart_fact": "Active penicillin allergy (SNOMED 91936005)", "expected": "CRITICAL"}
+  ]
+}
