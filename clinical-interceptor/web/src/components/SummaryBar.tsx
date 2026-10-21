@@ -24,9 +24,9 @@ export function SummaryBar({ report }: { report: AuditReport }) {
         <h2 id="summary-heading" className="text-lg font-semibold">
           Summary
         </h2>
-        <p className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm ${blocked ? "bg-red-600 text-white" : "bg-emerald-600 text-white"}`}>
+        <p className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm ${blocked ? "bg-red-700 text-white" : "bg-emerald-700 text-white"}`}>
           Pipeline status: <strong>{report.pipeline_status}</strong>
-          <span className="opacity-90">· overall {SEVERITY_LABEL[report.overall_risk_severity].toLowerCase()}</span>
+          <span>· overall {SEVERITY_LABEL[report.overall_risk_severity].toLowerCase()}</span>
         </p>
       </div>
       <dl className="grid gap-4 sm:grid-cols-3">

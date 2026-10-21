@@ -14,7 +14,7 @@ const STYLE: Record<Severity, string> = {
 };
 const BADGE: Record<Severity, string> = {
   CRITICAL: "bg-red-700 text-white",
-  WARNING: "bg-amber-600 text-white",
+  WARNING: "bg-amber-700 text-white",
   SAFE: "bg-emerald-700 text-white",
 };
 

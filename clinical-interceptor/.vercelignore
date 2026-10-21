@@ -1,0 +1,36 @@
+# Upload only what the API function needs: api/, src/, config/, knowledge/, db/, fixtures/, requirements.txt, vercel.json.
+# This file replaces .gitignore for `vercel deploy`, so secrets and large folders are listed here explicitly.
+
+# Secrets and test keys: never upload
+seed
+.env
+.env.*
+**/*.pem
+**/*.key
+
+# The 700 MB NLI checkpoint does not fit in a function and is not used by the demo
+models
+
+# Everything else the function does not read at run time
+web
+benchmark
+benchmarks
+tests
+docs
+scripts
+tools
+examples
+migrations
+var
+data
+node_modules
+**/node_modules
+__pycache__
+**/__pycache__
+.mypy_cache
+.ruff_cache
+.pytest_cache
+.venv
+*.pdf
+*.log
+*.txt.bak

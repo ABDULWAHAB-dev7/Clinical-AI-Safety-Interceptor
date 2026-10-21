@@ -1,6 +1,6 @@
 # Gate G1: NLI model selection
 
-Status: **open. Needs a human decision.** PLAN 4.1 says candidates go to the human reviewer with licence, parameter
+Status: **approved by the project owner** for `cross-encoder/nli-deberta-v3-base` (lock in `models/nli/MODEL.lock`). The text below is the original memo, kept for the record. PLAN 4.1 says candidates go to the human reviewer with licence, parameter
 count and CPU latency, and that the choice is not made on the assistant's judgment. This memo gives the constraints and
 the candidates. The CPU latency numbers are not measured yet (see "Needed to close G1").
 
