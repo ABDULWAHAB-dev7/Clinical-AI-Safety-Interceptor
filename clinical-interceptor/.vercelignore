@@ -7,6 +7,7 @@ seed
 .env.*
 **/*.pem
 **/*.key
+.vercel
 
 # The 700 MB NLI checkpoint does not fit in a function and is not used by the demo
 models

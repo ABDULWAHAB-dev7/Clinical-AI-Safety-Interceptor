@@ -187,6 +187,13 @@ python scripts/smoke.py --base https://127.0.0.1:8443 --pseudo-key <the server's
 
 The smoke test checks that a connection with no certificate is refused at the TLS handshake, that a CA-signed but unregistered certificate gets 403, and then walks decompose, verify, audit and both reads. It passed against a migrated PostgreSQL 18 database.
 
+### Demo on Vercel
+
+The service and the dashboard run on Vercel as two projects (a Python function and a Next.js app), on the
+`vercel-demo` profile: bearer-only auth, synthetic data, and no NLI model. See
+[docs/deployment.md](docs/deployment.md) for the environment variables, the database, and what the demo can and
+cannot do.
+
 ### How the proxy behaves
 
 - **Before the upstream is called:** the request is validated, the bundle is parsed, the patient must match, and the model must be in the routing table. A request that fails any of these is never forwarded. The FHIR bundle and the interception policy are never sent upstream.
