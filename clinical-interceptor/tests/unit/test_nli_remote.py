@@ -7,7 +7,7 @@ failures: none of them may produce a score.
 import unittest
 
 from interceptor.core.errors import ErrorClass, PipelineError
-from interceptor.nli.remote import MAX_PAIRS, RemoteNliError, RemoteNliScorer, build_scorer
+from interceptor.nli.remote import MAX_PAIRS, RemoteNliError, RemoteNliScorer, RemoteNliUnavailable, build_scorer
 
 GOOD = {"entailment": 0.1, "neutral": 0.2, "contradiction": 0.7}
 
@@ -180,9 +180,8 @@ class WarmUpTests(unittest.TestCase):
 
     def test_warm_up_fails_when_the_service_is_unreachable(self):
         s, _ = scorer(error=OSError("connection refused"))
-        with self.assertRaises(PipelineError) as caught:
+        with self.assertRaises(RemoteNliUnavailable):
             s.warm_up()
-        self.assertEqual(caught.exception.error_class, ErrorClass.POLICY_LOAD_FAILURE)
 
     def test_warm_up_fails_when_the_service_answers_wrongly(self):
         s, _ = scorer(ok_response([{"entailment": 0.1, "neutral": 0.1, "contradiction": 0.8}]))
@@ -196,10 +195,29 @@ class BuildTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             build_scorer(None, timeout_seconds=5.0)
 
-    def test_build_scorer_refuses_a_service_that_does_not_answer(self):
+    def test_a_service_that_cannot_be_reached_does_not_stop_the_interceptor(self):
+        """The interceptor's availability must not depend on the model's.
+
+        A service that is down, or still booting, leaves the interceptor running: the claims that need the model
+        fail closed and the rest of the service keeps working.
+        """
         # port 1 refuses the connection at once, so the test does not wait for a timeout
-        with self.assertRaises(PipelineError):
-            build_scorer("http://127.0.0.1:1", timeout_seconds=1.0, startup_retries=0)
+        scorer = build_scorer("http://127.0.0.1:1", timeout_seconds=1.0, startup_retries=0)
+        self.assertFalse(scorer.ready)
+
+    def test_a_service_that_answers_wrongly_stops_the_interceptor(self):
+        """That is a fault, not a service that is down, and a fault is a start-up failure."""
+        client = FakeClient(response=FakeResponse(status_code=401, body={}))
+        scorer = RemoteNliScorer("http://nli.internal:8100", client=client, startup_retries=0)
+        with self.assertRaises(PipelineError) as caught:
+            scorer.warm_up()
+        self.assertEqual(caught.exception.error_class, ErrorClass.POLICY_LOAD_FAILURE)
+
+    def test_the_scorer_is_ready_after_a_good_warm_up(self):
+        s, _ = scorer(ok_response([{"entailment": 0.9, "neutral": 0.05, "contradiction": 0.05}]))
+        self.assertFalse(s.ready)
+        s.warm_up()
+        self.assertTrue(s.ready)
 
 
 if __name__ == "__main__":

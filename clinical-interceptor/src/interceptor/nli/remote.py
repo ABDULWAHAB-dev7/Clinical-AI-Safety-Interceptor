@@ -30,6 +30,10 @@ class RemoteNliError(Exception):
     """The inference service did not answer with usable scores. The caller must fail closed."""
 
 
+class RemoteNliUnavailable(RemoteNliError):
+    """The inference service could not be reached at all. It may be down, or still booting."""
+
+
 class RemoteNliScorer:
     """Scores premise/hypothesis pairs with a self-hosted NLI inference service."""
 
@@ -46,6 +50,7 @@ class RemoteNliScorer:
         # an answer and an answer must not be second-guessed.
         self.startup_retries = int(startup_retries)
         self.retry_backoff_seconds = float(retry_backoff_seconds)
+        self.ready = False  # True once the service has answered correctly at least once
         self._client = client
         self._owns_client = client is None
 
@@ -71,14 +76,23 @@ class RemoteNliScorer:
             raise RemoteNliError("the NLI service returned the wrong number of scores")
         return [self._one(row) for row in scores]
 
-    def warm_up(self):
-        """The same identical-sentence check the local scorer does, so a broken service fails at start-up."""
+    def warm_up(self, retries=None):
+        """The same identical-sentence check the local scorer does, so a broken service fails at start-up.
+
+        A service that cannot be reached is reported as unavailable rather than as broken: it may be down, or it
+        may still be booting, and neither is a reason to refuse to start the interceptor. A service that answers
+        wrongly is a fault, and that does stop the interceptor.
+        """
         try:
             scores = self.score("The patient has a fever.", "The patient has a fever.")
+        except RemoteNliUnavailable as exc:
+            raise RemoteNliUnavailable(f"the NLI service could not be reached: {exc}") from exc
         except RemoteNliError as exc:
             raise PipelineError(ErrorClass.POLICY_LOAD_FAILURE, f"NLI service is not usable: {exc}") from exc
         if max(scores, key=scores.get) != "entailment":
             raise PipelineError(ErrorClass.POLICY_LOAD_FAILURE, "NLI service failed its identical-sentence check")
+        self.ready = True
+        return scores
 
     def _one(self, row) -> Mapping[str, float]:
         if not isinstance(row, dict):
@@ -104,7 +118,7 @@ class RemoteNliScorer:
             except Exception as exc:  # a transport failure: the service may still be booting
                 attempt += 1
                 if attempt > self.startup_retries:
-                    raise RemoteNliError(
+                    raise RemoteNliUnavailable(
                         f"the NLI service could not be reached: {type(exc).__name__}") from exc
                 time.sleep(self.retry_backoff_seconds)
                 continue
@@ -126,11 +140,23 @@ class RemoteNliScorer:
 
 
 def build_scorer(endpoint: Optional[str], *, timeout_seconds: float, token: Optional[str] = None,
-                 startup_retries: int = 40, retry_backoff_seconds: float = 1.5) -> RemoteNliScorer:
-    """Builds a remote scorer and refuses to build one that is not usable."""
+                 startup_retries: int = 40, retry_backoff_seconds: float = 1.5,
+                 warmup_retries: int = 3) -> RemoteNliScorer:
+    """Builds a remote scorer.
+
+    A service that answers wrongly is a fault and stops the interceptor. A service that cannot be reached is not:
+    the interceptor starts, reports the model as unavailable, and every claim that needs the model fails closed
+    while the rest of the service keeps working. The interceptor's availability must not depend on the model's.
+    """
     if not endpoint:
         raise RuntimeError("INTERCEPTOR_NLI_MODE=remote needs INTERCEPTOR_NLI_ENDPOINT")
     scorer = RemoteNliScorer(endpoint, timeout_seconds=timeout_seconds, token=token,
                              startup_retries=startup_retries, retry_backoff_seconds=retry_backoff_seconds)
-    scorer.warm_up()  # a service that cannot answer is a start-up failure, not a per-request failure
+    try:
+        scorer.warm_up()
+    except RemoteNliUnavailable:
+        # The service is down or still booting. The first clinical request waits for it, and fails closed if it
+        # never comes up. The warm-up is not retried for long here, so a cold start of the interceptor is quick.
+        scorer.ready = False
+        return scorer
     return scorer

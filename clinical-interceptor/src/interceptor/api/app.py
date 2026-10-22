@@ -127,7 +127,7 @@ def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_m
             "ready": database_ok,
             "components": {
                 "database": "ok" if database_ok else "unreachable",
-                "verifier": "nli_available" if nli_model is not None else "deterministic_only",
+                "verifier": _nli_state(app.state.nli_model),
             },
             "policy_version": policy.version,
         }
@@ -153,6 +153,18 @@ def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_m
         )
 
     return app
+
+
+def _nli_state(nli_model):
+    """What the verifier can do right now.
+
+    A remote NLI service that cannot be reached does not stop the interceptor: the claims that need the model fail
+    closed and the rest of the service keeps working. The readiness report says so, rather than claiming a model
+    that is not there.
+    """
+    if nli_model is None:
+        return "deterministic_only"
+    return "nli_available" if getattr(nli_model, "ready", True) else "nli_unavailable"
 
 
 def _request_id(request):

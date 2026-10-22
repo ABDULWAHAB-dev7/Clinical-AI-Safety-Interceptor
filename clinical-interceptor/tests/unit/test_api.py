@@ -105,6 +105,17 @@ class HealthAndContractTests(unittest.TestCase):
         self.assertEqual(r.status_code, 503)
         self.assertEqual(r.json()["components"]["database"], "unreachable")
 
+    def test_readiness_says_what_the_verifier_can_do(self):
+        """A model that cannot be reached is reported, not claimed.
+
+        The interceptor stays up when the NLI service is down: the claims that need the model fail closed and the
+        rest of the service keeps working. The readiness report has to say that, rather than claim a model that is
+        not there.
+        """
+        body = client().get("/v1/health/ready").json()
+        self.assertIn(body["components"]["verifier"], ("deterministic_only", "nli_available", "nli_unavailable"))
+        self.assertEqual(body["ready"], True)
+
     def test_old_unversioned_health_paths_are_gone(self):
         self.assertEqual(client().get("/healthz").status_code, 404)
 
