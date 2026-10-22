@@ -12,15 +12,36 @@ npm test             # heatmap unit tests (Vitest), including the emoji code-poi
 npm run e2e          # Playwright against a production build, with axe (zero serious or critical violations)
 ```
 
+## Design
+
+A minimal theme: one warm-neutral palette, hairline rules, light type, and color only for the three severities (each
+also has a word and an icon). Icons are [Hugeicons](https://hugeicons.com) (`@hugeicons/react` with the free core set,
+thin 1.5 stroke, wrapped in `components/Icon.tsx`). Smooth scrolling is [Lenis](https://lenis.dev) (`components/SmoothScroll.tsx`,
+with a hairline reading-progress bar and `components/Reveal.tsx` fading sections in once). Lenis is off when the visitor asks
+for reduced motion, and nothing is hidden without scripts. Everything works under the strict CSP: no inline style
+attributes in markup, and scroll effects set styles through the CSSOM.
+
 ## Pages
 
-- `/` renders `src/lib/fixtures/case-0001.json`. The fixture is generated from the real pipeline, not written by hand:
+- `/` the overview: what it does, how it works, the four outcomes.
+- `/sample` renders `src/lib/fixtures/case-0001.json`. The fixture is generated from the real pipeline, not written by hand:
   `python scripts/export_fixture.py --case case-0001 --out web/src/lib/fixtures/case-0001.json`.
   Statements that need the NLI model are scored by a neutral stand-in (no model is approved yet, Gate G1), so the fixture
   says so in `meta.nli` and the page shows a notice.
+- `/analyze` pastes a note and shows its report, with the clinician review panel.
+- `/quarantine` lists notes held as blocked, each with a link to review it.
 - `/notes/<note id>?report=<report id>` reads a live report. The interceptor does not store note text, so the reviewer
   pastes the exact text, which is checked against the recorded SHA-256 before any highlight is drawn. The text stays in
-  component state only.
+  component state only. The review panel works without the text.
+
+## Clinician review
+
+The panel (`components/ReviewPanel.tsx`) answers each finding once: a warning is accepted, edited or rejected
+(`POST /v1/interceptor/acknowledge`), a critical finding is overridden with a reason (`/override`). It also shows whether
+the note is ready to sign (`/audit/reports/{id}/review-status`). The browser calls `/api/review`, `/api/review-status` and
+`/api/quarantine`; those routes mint a token with only the scope each call needs (`interceptor:acknowledge`,
+`interceptor:override` or `interceptor:read`). The typed name is turned into a pseudonym by the interceptor. It is not a
+verified identity.
 
 ## Paste a note (`/analyze`)
 

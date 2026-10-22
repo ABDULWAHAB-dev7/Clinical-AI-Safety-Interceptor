@@ -418,15 +418,18 @@ class PostgresAuditStore:
                 rows = conn.execute(
                     """
                     SELECT note_id, patient_pseudo_id, encounter_pseudo_id, source_system, note_type, claim_count,
-                           pipeline_status, received_at, completed_at
-                    FROM intercepted_notes WHERE pipeline_status = %s ORDER BY received_at DESC LIMIT %s
+                           pipeline_status, received_at, completed_at,
+                           (SELECT t.output_payload->>'report_id' FROM audit_traces t
+                            WHERE t.note_id = n.note_id AND t.stage = 'ATTRIBUTE'
+                            ORDER BY t.created_at DESC LIMIT 1) AS report_id
+                    FROM intercepted_notes n WHERE pipeline_status = %s ORDER BY received_at DESC LIMIT %s
                     """,
                     (status, limit),
                 ).fetchall()
         except psycopg.Error as exc:
             raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
         keys = ("note_id", "patient_pseudo_id", "encounter_pseudo_id", "source_system", "note_type", "claim_count",
-                "pipeline_status", "received_at", "completed_at")
+                "pipeline_status", "received_at", "completed_at", "report_id")
         return [dict(zip(keys, r)) | {"note_id": str(r[0])} for r in rows]
 
     def record_override(self, *, report_id, claim_id, reviewer_ref, comment, note_status=None):

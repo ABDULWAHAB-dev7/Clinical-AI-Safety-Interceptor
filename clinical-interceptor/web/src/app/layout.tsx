@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Shield01Icon } from "@hugeicons/core-free-icons";
+import { Icon } from "@/components/Icon";
+import { SiteNav } from "@/components/SiteNav";
+import { SmoothScroll } from "@/components/SmoothScroll";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -14,62 +18,43 @@ export const metadata: Metadata = {
 // Every page is rendered per request, because the Content-Security-Policy nonce (src/proxy.ts) changes each time.
 export const dynamic = "force-dynamic";
 
-const NAV = [
-  { href: "/", label: "Sample review" },
-  { href: "/analyze", label: "Analyse a note" },
-];
-
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-20 focus:rounded-lg focus:bg-white focus:p-2 focus:shadow"
-        >
-          Skip to content
-        </a>
-        <header className="sticky top-0 z-10 border-b border-slate-200/80 bg-white/90 backdrop-blur">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-            <Link href="/" className="flex items-center gap-2.5 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-              <span className="grid size-9 place-items-center rounded-xl bg-indigo-600 text-white shadow-sm" aria-hidden="true">
-                <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z" />
-                  <path d="M9 12l2 2 4-4" />
-                </svg>
-              </span>
-              <span className="leading-tight">
-                <span className="block text-sm font-semibold">Clinical AI Safety Interceptor</span>
-                <span className="block text-xs text-slate-600">Verifies generated text against the record</span>
-              </span>
-            </Link>
-            <nav aria-label="Main">
-              <ul className="flex gap-1 text-sm font-medium">
-                {NAV.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className="inline-flex rounded-lg px-3 py-2 text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
-        </header>
+      <body className="min-h-screen bg-paper text-ink antialiased">
+        <SmoothScroll>
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-40 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:text-paper"
+          >
+            Skip to content
+          </a>
+          <header className="sticky top-0 z-20 border-b border-line bg-paper/85 backdrop-blur">
+            <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
+              <Link href="/" className="flex items-center gap-2.5 rounded-full">
+                <span className="grid size-8 place-items-center rounded-full border border-ink">
+                  <Icon icon={Shield01Icon} size={16} />
+                </span>
+                <span className="sr-only text-sm font-medium tracking-tight sm:not-sr-only">Interceptor</span>
+              </Link>
+              <SiteNav />
+            </div>
+          </header>
 
-        <main id="main" className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-          {children}
-        </main>
+          <main id="main" className="mx-auto max-w-5xl px-5 sm:px-8">
+            {children}
+          </main>
 
-        <footer className="border-t border-slate-200 bg-white">
-          <p className="mx-auto max-w-6xl px-4 py-6 text-xs leading-5 text-slate-600 sm:px-6">
-            Synthetic data only. Not validated for clinical use, not a medical device, and not for patient care. Nothing
-            pasted here is stored by this application.
-          </p>
-        </footer>
+          <footer className="mt-32 border-t border-line">
+            <div className="mx-auto flex max-w-5xl flex-col gap-3 px-5 py-8 text-xs leading-5 text-muted sm:px-8 md:flex-row md:justify-between">
+              <p>Clinical AI Safety Interceptor</p>
+              <p className="max-w-xl md:text-right">
+                Synthetic data only. Not validated for clinical use, not a medical device, and not for patient care. Nothing
+                pasted here is stored by this application.
+              </p>
+            </div>
+          </footer>
+        </SmoothScroll>
       </body>
     </html>
   );

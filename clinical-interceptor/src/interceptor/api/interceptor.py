@@ -361,7 +361,8 @@ def quarantine(request: Request, limit: int = 50):
     return {"count": len(visible), "notes": [
         {"note_id": n["note_id"], "patient_pseudo_id": n["patient_pseudo_id"],
          "encounter_pseudo_id": n["encounter_pseudo_id"], "note_type": n["note_type"],
-         "claim_count": n["claim_count"], "blocked_at": iso(n["completed_at"] or n["received_at"])}
+         "claim_count": n["claim_count"], "report_id": n["report_id"],
+         "blocked_at": iso(n["completed_at"] or n["received_at"])}
         for n in visible]}
 
 

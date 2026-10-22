@@ -40,6 +40,7 @@ class QuarantineTests(unittest.TestCase):
         blocked = self.client.post("/v1/verify", json=CONTRADICTED, headers=auth_headers()).json()
         listed = quarantine(self.client).json()
         self.assertEqual([n["note_id"] for n in listed["notes"]], [blocked["note_id"]])
+        self.assertEqual(listed["notes"][0]["report_id"], blocked["request_id"])  # the dashboard opens the review from it
         self.assertEqual(len(self.recorder.events), 1)
         event = self.recorder.events[0]
         self.assertEqual(event["event"], notify.NOTE_QUARANTINED)

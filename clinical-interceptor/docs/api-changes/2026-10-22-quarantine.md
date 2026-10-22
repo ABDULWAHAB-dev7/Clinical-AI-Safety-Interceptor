@@ -9,7 +9,7 @@ failure fails closed and is visible).
 
 Scope `interceptor:read`. Query: `limit` (1-200, default 50). Lists notes whose status is `BLOCKED` and not yet
 overridden, newest first: `note_id`, `patient_pseudo_id`, `encounter_pseudo_id`, `note_type`, `claim_count`,
-`blocked_at`. No note or claim text. In mTLS mode only patients in the client's registry scope are listed. A note leaves
+`report_id` (the latest report, so a reviewer can open it), `blocked_at`. No note or claim text. In mTLS mode only patients in the client's registry scope are listed. A note leaves
 the list when `/override` moves it to `OVERRIDDEN_BY_CLINICIAN`.
 
 ## Notifications

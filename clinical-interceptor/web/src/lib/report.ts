@@ -23,4 +23,3 @@ export function shortPatientId(pseudoId: string): string {
 }
 
 export const SEVERITY_LABEL: Record<Severity, string> = { CRITICAL: "Critical", WARNING: "Warning", SAFE: "Supported" };
-export const SEVERITY_ICON: Record<Severity, string> = { CRITICAL: "⛔", WARNING: "⚠", SAFE: "✓" };

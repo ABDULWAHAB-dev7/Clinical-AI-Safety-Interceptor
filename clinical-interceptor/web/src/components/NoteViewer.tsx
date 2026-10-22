@@ -2,21 +2,17 @@
 
 import { useMemo, useState } from "react";
 import { buildSegments } from "@/lib/heatmap";
-import { SEVERITY_ICON, SEVERITY_LABEL } from "@/lib/report";
+import { SEVERITY_LABEL } from "@/lib/report";
 import type { Severity, ViewSpan } from "@/lib/types";
 import { SpanTooltip } from "./SpanTooltip";
 
-// Each severity has a color, an underline style, and a text label, so color is never the only signal.
+// Each severity has a tint, an underline style and a text label, so color is never the only signal.
 const STYLE: Record<Severity, string> = {
-  CRITICAL: "bg-red-100/80 text-red-950 underline decoration-solid decoration-2 decoration-red-700 hover:bg-red-200/80",
-  WARNING: "bg-amber-100/80 text-amber-950 underline decoration-dotted decoration-2 decoration-amber-700 hover:bg-amber-200/80",
-  SAFE: "bg-emerald-50 text-slate-900 underline decoration-solid decoration-2 decoration-emerald-700 hover:bg-emerald-100",
+  CRITICAL: "bg-crit-tint underline decoration-solid decoration-2 decoration-crit underline-offset-4 hover:bg-[#fbe0dc]",
+  WARNING: "bg-warn-tint underline decoration-dotted decoration-2 decoration-warn underline-offset-4 hover:bg-[#fbeac6]",
+  SAFE: "underline decoration-solid decoration-1 decoration-ok underline-offset-4 hover:bg-ok-tint",
 };
-const BADGE: Record<Severity, string> = {
-  CRITICAL: "bg-red-700 text-white",
-  WARNING: "bg-amber-700 text-white",
-  SAFE: "bg-emerald-700 text-white",
-};
+const LABEL: Record<Severity, string> = { CRITICAL: "text-crit", WARNING: "text-warn", SAFE: "text-ok" };
 
 /** The note with a highlight per attributed span. Every highlight is a button that can be reached with the keyboard. */
 export function NoteViewer({ text, spans }: { text: string; spans: ViewSpan[] }) {
@@ -24,8 +20,8 @@ export function NoteViewer({ text, spans }: { text: string; spans: ViewSpan[] })
   const [active, setActive] = useState<number | null>(null);
 
   return (
-    <div className="space-y-4">
-      <p className="whitespace-pre-wrap rounded-xl bg-slate-50 p-5 font-sans text-base leading-8 text-slate-800 sm:p-6 sm:text-lg sm:leading-9" data-testid="note-text">
+    <div className="space-y-5">
+      <p className="whitespace-pre-wrap text-lg font-light leading-9 sm:text-xl sm:leading-10" data-testid="note-text">
         {segments.map((segment) => {
           if (segment.severity === null) return <span key={segment.start}>{segment.text}</span>;
           const severity = segment.severity;
@@ -40,11 +36,10 @@ export function NoteViewer({ text, spans }: { text: string; spans: ViewSpan[] })
               onClick={() => setActive(active === segment.start ? null : segment.start)}
               onFocus={() => setActive(segment.start)}
               onMouseEnter={() => setActive(segment.start)}
-              className={`mx-0.5 inline-flex flex-wrap items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left align-baseline transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700 ${STYLE[severity]} ${active === segment.start ? "ring-2 ring-indigo-600" : ""}`}
+              className={`mx-0.5 inline rounded-sm px-1 py-0.5 text-left align-baseline font-light transition-colors ${STYLE[severity]} ${active === segment.start ? "outline outline-1 outline-ink" : ""}`}
             >
               {segment.text}
-              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold no-underline ${BADGE[severity]}`}>
-                <span aria-hidden="true">{SEVERITY_ICON[severity]}</span>
+              <span className={`ml-1.5 align-middle text-[0.6rem] font-medium uppercase tracking-[0.12em] ${LABEL[severity]}`}>
                 {SEVERITY_LABEL[severity]}
               </span>
             </button>
@@ -52,7 +47,7 @@ export function NoteViewer({ text, spans }: { text: string; spans: ViewSpan[] })
         })}
       </p>
 
-      <div aria-live="polite" className="min-h-6 text-sm text-slate-600">
+      <div aria-live="polite" className="min-h-6 text-sm text-muted">
         {active === null ? "Select a highlight to see the evidence behind it." : null}
         {segments.map((segment) =>
           segment.severity === null ? null : (
@@ -62,7 +57,7 @@ export function NoteViewer({ text, spans }: { text: string; spans: ViewSpan[] })
       </div>
 
       {warnings.length > 0 ? (
-        <p role="alert" className="rounded-xl border border-amber-700 bg-amber-50 p-4 text-sm text-amber-950">
+        <p role="alert" className="rounded-xl border border-warn bg-warn-tint p-4 text-sm text-warn">
           {warnings.length} attribution span(s) did not match this text and are not shown:{" "}
           {warnings.map((w) => `${w.spanId} (${w.reason})`).join("; ")}
         </p>

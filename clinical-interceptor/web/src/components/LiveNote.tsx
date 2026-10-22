@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { AuditReport, NoteIndex } from "@/lib/types";
+import { Reveal } from "./Reveal";
 import { ReportView } from "./ReportView";
+import { ReviewPanel } from "./ReviewPanel";
 
 interface Loaded {
   note: NoteIndex;
@@ -17,6 +19,7 @@ async function sha256Hex(text: string): Promise<string> {
 /**
  * The interceptor never stores note text, so the reviewer supplies it. It is checked against the recorded SHA-256
  * before any highlight is drawn, and it lives only in this component's state: never in storage, a URL or a request.
+ * The review panel does not need the text, so a finding can be answered before the text is pasted.
  */
 export function LiveNote({ noteId, reportId }: { noteId: string; reportId: string }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -54,30 +57,46 @@ export function LiveNote({ noteId, reportId }: { noteId: string; reportId: strin
     setText(candidate);
   }
 
-  if (failure) return <p role="alert" className="rounded border border-red-700 bg-red-50 p-3 text-red-950">{failure}</p>;
-  if (!loaded) return <p>Loading report…</p>;
-  if (text !== null) return <ReportView text={text} report={loaded.report} />;
+  if (failure) {
+    return (
+      <p role="alert" className="rounded-2xl border border-crit bg-crit-tint p-6 text-ink">
+        {failure}
+      </p>
+    );
+  }
+  if (!loaded) return <p className="text-muted">Loading report…</p>;
+  if (text !== null) return <ReportView text={text} report={loaded.report} reviewable />;
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      <p>
-        The report for this note was found ({loaded.report.pipeline_status}). The service does not keep note text. Paste
-        the exact text that was audited to see where each finding sits.
-      </p>
-      <label htmlFor="note-text" className="block font-semibold">
-        Note text
-      </label>
-      <textarea
-        id="note-text"
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        rows={8}
-        className="w-full rounded border border-slate-500 p-2 font-mono text-sm"
-      />
-      <button type="submit" className="rounded bg-slate-900 px-4 py-2 font-semibold text-white">
-        Show highlights
-      </button>
-      {mismatch ? <p role="alert" className="text-red-900">{mismatch}</p> : null}
-    </form>
+    <div className="space-y-24">
+      <form onSubmit={submit} className="max-w-2xl space-y-5">
+        <p className="leading-7 text-muted">
+          The report for this note was found ({loaded.report.pipeline_status}). The service does not keep note text. Paste the
+          exact text that was audited to see where each finding sits.
+        </p>
+        <label htmlFor="note-text" className="block text-sm font-medium">
+          Note text
+        </label>
+        <textarea
+          id="note-text"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          rows={8}
+          data-lenis-prevent
+          className="field font-mono"
+        />
+        <button type="submit" className="btn btn-solid">
+          Show highlights
+        </button>
+        {mismatch ? (
+          <p role="alert" className="text-sm text-crit">
+            {mismatch}
+          </p>
+        ) : null}
+      </form>
+      <Reveal>
+        <ReviewPanel report={loaded.report} />
+      </Reveal>
+    </div>
   );
 }

@@ -1,29 +1,200 @@
 @import "tailwindcss";
 
-/* Light theme only: the severity colors are chosen and checked for contrast (at least 4.5:1) on these backgrounds. */
+/*
+  Minimal theme. One neutral palette, hairline rules, a lot of white space, and color only where it carries meaning
+  (the three severities). Light only. Every text and background pair below was chosen for at least 4.5:1 contrast.
+*/
 :root {
   color-scheme: light;
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --paper: #fafaf9;
+  --surface: #ffffff;
+  --ink: #141414;
+  --muted: #5c5c58;
+  --line: #e6e5e0;
+  --line-strong: #cfcdc6;
+
+  --crit: #b42318;
+  --crit-tint: #fdf0ee;
+  --warn: #8a4b08;
+  --warn-tint: #fdf4e3;
+  --ok: #166534;
+  --ok-tint: #eef7f0;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-crit: var(--crit);
+  --color-crit-tint: var(--crit-tint);
+  --color-warn: var(--warn);
+  --color-warn-tint: var(--warn-tint);
+  --color-ok: var(--ok);
+  --color-ok-tint: var(--ok-tint);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Keyboard focus is always visible: a 2px indigo outline with an offset, on every interactive element. */
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Keyboard focus is always visible: a 2px ink outline with an offset, on every interactive element. */
 :where(a, button, input, select, textarea, summary):focus-visible {
-  outline: 2px solid #4338ca;
-  outline-offset: 2px;
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* ---- shared pieces ------------------------------------------------------------------------------------------- */
+
+.eyebrow {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.7rem 1.35rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.btn-solid {
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn-solid:hover:not(:disabled) {
+  background: #333330;
+}
+.btn-line {
+  background: transparent;
+  color: var(--ink);
+}
+.btn-line:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn:disabled {
+  cursor: not-allowed;
+  border-color: var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+}
+
+.field {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.9rem;
+  line-height: 1.5rem;
+  color: var(--ink);
+  transition: border-color 0.2s ease;
+}
+.field::placeholder {
+  color: #77776f;
+}
+.field:hover,
+.field:focus {
+  border-color: var(--ink);
+}
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+}
+
+.rule {
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  line-height: 1.1rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tag-crit {
+  background: var(--crit-tint);
+  color: var(--crit);
+}
+.tag-warn {
+  background: var(--warn-tint);
+  color: var(--warn);
+}
+.tag-ok {
+  background: var(--ok-tint);
+  color: var(--ok);
+}
+.tag-neutral {
+  background: #efeeea;
+  color: var(--ink);
+}
+
+/* ---- motion -------------------------------------------------------------------------------------------------- */
+
+/* Content below the fold fades up once, the first time it scrolls into view (components/Reveal.tsx). */
+.reveal {
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal[data-state="hidden"] {
+  opacity: 0;
+  transform: translateY(1.25rem);
+}
+
+.progress-bar {
+  transform-origin: left;
+  transform: scaleX(0);
+}
+
+/* Lenis (smooth scroll). These are the rules lenis ships, copied here because a strict style policy is used. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -32,5 +203,9 @@ body {
   *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+  }
+  .reveal[data-state="hidden"] {
+    opacity: 1;
+    transform: none;
   }
 }

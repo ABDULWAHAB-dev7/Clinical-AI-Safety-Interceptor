@@ -38,14 +38,15 @@ export function authMode(): "mtls" | "bearer" {
   return process.env.INTERCEPTOR_AUTH_MODE === "bearer" ? "bearer" : "mtls";
 }
 
-export function config(): Config {
+/** `scopes` narrows the token minted in bearer-only mode, so a route that only reviews findings cannot also write audits. */
+export function config(scopes?: readonly string[]): Config {
   const base = process.env.INTERCEPTOR_API_URL;
   if (!base) throw new NotConfigured("The dashboard is not connected to an interceptor.");
 
   if (authMode() === "bearer") {
     const signingKey = process.env.INTERCEPTOR_BEARER_SIGNING_KEY;
     if (!signingKey) throw new NotConfigured("The dashboard is not connected to an interceptor.");
-    return { base, token: mintBearer(signingKey), pseudoKey: process.env.INTERCEPTOR_PSEUDO_KEY };
+    return { base, token: mintBearer(signingKey, { scopes }), pseudoKey: process.env.INTERCEPTOR_PSEUDO_KEY };
   }
 
   const token = process.env.INTERCEPTOR_BEARER_TOKEN;

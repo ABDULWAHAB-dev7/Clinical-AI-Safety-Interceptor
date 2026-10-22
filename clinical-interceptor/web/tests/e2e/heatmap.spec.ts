@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("case-0001 heatmap", () => {
   test("shows the three flagged statements and the two supported ones with text labels", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/sample");
 
     const critical = page.locator('button[data-severity="CRITICAL"]');
     const warning = page.locator('button[data-severity="WARNING"]');
@@ -25,7 +25,7 @@ test.describe("case-0001 heatmap", () => {
   });
 
   test("keyboard focus reveals the evidence, in document order", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/sample");
     const buttons = page.locator("button[data-severity]");
     await buttons.first().focus();
     await expect(page.getByRole("tooltip")).toBeVisible();
@@ -40,7 +40,7 @@ test.describe("case-0001 heatmap", () => {
   });
 
   test("sends a strict CSP, stores nothing in the browser, and shows the patient id as 8 characters", async ({ page }) => {
-    const response = await page.goto("/");
+    const response = await page.goto("/sample");
     const csp = response?.headers()["content-security-policy"] ?? "";
     expect(csp).toContain("script-src 'self' 'nonce-");
     expect(csp).not.toContain("unsafe-inline");
@@ -62,8 +62,16 @@ test.describe("case-0001 heatmap", () => {
   for (const width of [390, 1280]) {
     test(`renders at ${width}px without horizontal page scroll and with no serious axe violations`, async ({ page }) => {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
-      await page.goto("/");
+      await page.goto("/sample");
       await expect(page.locator("button[data-severity]")).toHaveCount(5);
+      // Sections fade in as they are scrolled to, so scroll through the page once before checking colors.
+      await page.evaluate(async () => {
+        for (let y = 0; y < document.body.scrollHeight; y += 400) {
+          window.scrollTo(0, y);
+          await new Promise((resolve) => setTimeout(resolve, 40));
+        }
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      });
       await page.locator('button[data-severity="CRITICAL"]').first().focus();
       await page.screenshot({ path: `test-results/heatmap-${width}.png`, fullPage: true });
 

@@ -228,7 +228,13 @@ class MemoryAuditStore:
         rows.sort(key=lambda n: n["received_at"], reverse=True)
         keys = ("note_id", "patient_pseudo_id", "encounter_pseudo_id", "source_system", "note_type", "claim_count",
                 "pipeline_status", "received_at", "completed_at")
-        return [{k: n[k] for k in keys} for n in rows[:limit]]
+        return [{k: n[k] for k in keys} | {"report_id": self._latest_report_id(n["note_id"])} for n in rows[:limit]]
+
+    def _latest_report_id(self, note_id):
+        for trace in reversed(self.traces):
+            if trace["note_id"] == note_id and trace["stage"] == "ATTRIBUTE":
+                return trace["payload"].get("report_id")
+        return None
 
     def record_override(self, *, report_id, claim_id, reviewer_ref, comment, note_status=None):
         """Appends a FALSE_POSITIVE review to the event for this claim, and optionally sets the note status."""
