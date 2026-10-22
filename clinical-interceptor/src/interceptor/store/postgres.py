@@ -140,9 +140,12 @@ def _shared_pool(dsn, connect_timeout, pool_size):
 class PostgresAuditStore:
     """Writes one request's records in a single transaction. Any database error is AUDIT_WRITE_FAILURE."""
 
-    def __init__(self, dsn, connect_timeout=3, pool_size=4):
+    def __init__(self, dsn, connect_timeout=10, pool_size=4):
         # A pool, not a connection per call: a remote database (for example a hosted one) can cost over a second to
-        # connect, and one request makes several store calls.
+        # connect, and one request makes several store calls. The default connect timeout is ten seconds, not
+        # three: a cold function in a cold region can take longer than that to open a connection, and a timeout
+        # that is too short turns a healthy database into a reported outage, and a clinical request into a block
+        # for the wrong reason.
         self.dsn = dsn
         self.connect_timeout = connect_timeout
         # Shared: many stores (one per app, and one per test) must not each hold their own connections.

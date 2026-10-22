@@ -271,11 +271,12 @@ def build_default_app():
     if nli_timeout:
         knowledge = dataclasses.replace(knowledge, thresholds=dataclasses.replace(
             knowledge.thresholds, nli_timeout_seconds=float(nli_timeout)))
+    connect_timeout = float(os.environ.get("INTERCEPTOR_DB_CONNECT_TIMEOUT_SECONDS", "10"))
     return create_app(
         auth_mode=auth_mode,
         policy_path=os.environ.get("INTERCEPTOR_POLICY", str(ROOT / "config/policy/default.yaml")),
         fhir_dir=os.environ.get("INTERCEPTOR_FHIR_DIR", str(ROOT / "fixtures/fhir")),
-        store=PostgresAuditStore(dsn),
+        store=PostgresAuditStore(dsn, connect_timeout=connect_timeout),
         pseudo_key=key.encode("utf-8"),
         verifier=_load_verifier(),
         mtls=_load_mtls(),
