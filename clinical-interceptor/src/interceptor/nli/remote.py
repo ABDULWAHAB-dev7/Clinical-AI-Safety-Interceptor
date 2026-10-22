@@ -24,6 +24,9 @@ from interceptor.core.errors import ErrorClass, PipelineError
 
 LABELS = ("entailment", "neutral", "contradiction")
 MAX_PAIRS = 64  # one request never carries more than this many pairs
+# The platform answers 502, 503 or 504 while a scaled-to-zero container boots. That is the platform talking, not the
+# model, so it is retried like an unreachable service. Any other status is an answer and is never retried.
+TRANSIENT_STATUS = frozenset({502, 503, 504})
 
 
 class RemoteNliError(Exception):
@@ -123,14 +126,15 @@ class RemoteNliScorer:
             try:
                 response = self._http().post(self.endpoint + self.path, json=payload, headers=headers,
                                              timeout=self.timeout_seconds)
+                if response.status_code not in TRANSIENT_STATUS:
+                    break
+                failure, cause = f"HTTP {response.status_code}", None
             except Exception as exc:  # a transport failure: the service may still be booting
-                attempt += 1
-                if attempt > self.startup_retries or time.monotonic() >= deadline:
-                    raise RemoteNliUnavailable(
-                        f"the NLI service could not be reached: {type(exc).__name__}") from exc
-                time.sleep(min(self.retry_backoff_seconds, max(0.0, deadline - time.monotonic())))
-                continue
-            break
+                failure, cause = type(exc).__name__, exc
+            attempt += 1
+            if attempt > self.startup_retries or time.monotonic() >= deadline:
+                raise RemoteNliUnavailable(f"the NLI service could not be reached: {failure}") from cause
+            time.sleep(min(self.retry_backoff_seconds, max(0.0, deadline - time.monotonic())))
         if response.status_code != 200:
             raise RemoteNliError(f"the NLI service answered with HTTP {response.status_code}")
         try:

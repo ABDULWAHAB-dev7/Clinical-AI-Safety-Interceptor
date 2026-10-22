@@ -152,6 +152,50 @@ class FailureTests(unittest.TestCase):
             s.score("a", "b")
         self.assertEqual(len(attempts), 4)  # the first attempt and three retries
 
+    def test_a_gateway_error_while_the_service_boots_is_retried(self):
+        """The platform answers 503 while a scaled-to-zero container starts. That is not the model's answer."""
+        attempts = []
+
+        class BootingClient(FakeClient):
+            def post(self, url, json=None, headers=None, timeout=None):
+                attempts.append(url)
+                if len(attempts) < 3:
+                    return FakeResponse(status_code=503, body={})
+                return FakeResponse(body={"scores": [GOOD]})
+
+        s = RemoteNliScorer("http://nli.internal:8100", client=BootingClient(), startup_retries=5,
+                            retry_backoff_seconds=0)
+        self.assertEqual(s.score("a", "b"), GOOD)
+        self.assertEqual(len(attempts), 3)
+
+    def test_a_gateway_error_that_never_clears_gives_up_as_unavailable(self):
+        attempts = []
+
+        class DownClient(FakeClient):
+            def post(self, url, json=None, headers=None, timeout=None):
+                attempts.append(url)
+                return FakeResponse(status_code=504, body={})
+
+        s = RemoteNliScorer("http://nli.internal:8100", client=DownClient(), startup_retries=2,
+                            retry_backoff_seconds=0)
+        with self.assertRaises(RemoteNliUnavailable):
+            s.score("a", "b")
+        self.assertEqual(len(attempts), 3)  # the first attempt and two retries
+
+    def test_an_error_status_the_service_chose_to_send_is_not_retried(self):
+        attempts = []
+
+        class ErrorClient(FakeClient):
+            def post(self, url, json=None, headers=None, timeout=None):
+                attempts.append(url)
+                return FakeResponse(status_code=500, body={})
+
+        s = RemoteNliScorer("http://nli.internal:8100", client=ErrorClient(), startup_retries=5,
+                            retry_backoff_seconds=0)
+        with self.assertRaises(RemoteNliError):
+            s.score("a", "b")
+        self.assertEqual(len(attempts), 1)
+
     def test_a_wrong_answer_is_not_retried(self):
         """A protocol failure is an answer, and an answer must not be second-guessed."""
         attempts = []
