@@ -105,8 +105,13 @@ Set these on the API project:
 | `INTERCEPTOR_NLI_CALL_TIMEOUT_SECONDS` | `10` — how long one call to the service may take |
 
 A container function scales to zero when idle, and booting the model takes longer than one scoring call, so the
-budget and the call timeout are two different numbers. The service is kept warm by a cron on its own project that
-pings its health endpoint every five minutes (`vercel.json` in the repository root).
+budget and the call timeout are two different numbers. A cold start is about fifteen seconds (the model loading
+from the image); a warm call is about 300 ms. The first attempt against a cold service is what wakes it, so the
+call timeout may expire once and the retry then succeeds; the 45 second budget covers both. The dashboard's
+"Analysing…" state covers the wait.
+
+There is no keep-alive cron. A ping every few minutes does not keep a container warm — measured, the service was
+cold again after five idle minutes with a three-minute cron — and every ping would pay for another cold boot.
 
 The interceptor does not depend on the model's availability. If the service is down, the interceptor stays up, the
 readiness report says `nli_unavailable`, and every claim that needs the model fails closed while the rest of the
