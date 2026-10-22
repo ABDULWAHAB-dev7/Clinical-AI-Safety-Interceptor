@@ -11,6 +11,7 @@ RUN pip install -r requirements.txt
 
 # Only what the service reads at run time: code, policy, knowledge, schema, migrations and the FHIR fixtures.
 COPY src ./src
+COPY nli_service ./nli_service
 COPY config ./config
 COPY knowledge ./knowledge
 COPY db ./db
@@ -23,6 +24,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 RUN useradd --create-home --uid 10001 interceptor && chown -R interceptor /app
 USER interceptor
 
-ENV PYTHONPATH=/app/src
+# src for the interceptor package, and the project root for the nli_service package, which the local NLI scorer
+# lives in.
+ENV PYTHONPATH=/app/src:/app
 EXPOSE 8000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

@@ -3,9 +3,13 @@
 # The name is Dockerfile.vercel because Vercel looks for that name when a service points at it. The same image
 # builds and runs anywhere: it is an ordinary OCI image that listens on $PORT.
 #
+# The build context is this directory, so the service is self-contained: it carries its own scorer, its own error
+# type and its own lock file, and it does not import the interceptor package. The interceptor uses the same scorer
+# through interceptor.nli.scorer, so the two cannot drift apart.
+#
 # The checkpoint is baked into the image, so the service starts without a download. It is about 750 MB, and the
-# lock file (models/nli/MODEL.lock) says which bytes are approved, so the image carries a checkpoint that can be
-# checked rather than one that has to be trusted. The build fails if a byte does not match.
+# lock file (MODEL.lock) says which bytes are approved, so the image carries a checkpoint that can be checked
+# rather than one that has to be trusted. The build fails if a byte does not match.
 #
 #   docker build -f nli_service/Dockerfile.vercel -t clinical-nli .
 #   docker run --rm -p 8100:8100 clinical-nli
@@ -20,7 +24,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     MKL_NUM_THREADS=4 \
     NLI_BAKE_MODEL=1 \
     NLI_MODEL_PATH=/models/nli/cross-encoder-nli-deberta-v3-base \
-    NLI_MODEL_LOCK=/models/nli/MODEL.lock \
+    NLI_MODEL_LOCK=/app/nli_service/MODEL.lock \
     PORT=8100
 
 WORKDIR /app
@@ -33,21 +37,24 @@ RUN apt-get update \
 COPY requirements-nli.txt ./
 RUN pip install -r requirements-nli.txt
 
-COPY src ./src
-COPY nli_service ./nli_service
-COPY tools ./tools
-COPY models/nli/MODEL.lock ./models/nli/MODEL.lock
+# The service package, at the root of the image so it imports as nli_service.
+COPY __init__.py ./nli_service/__init__.py
+COPY errors.py ./nli_service/errors.py
+COPY scorer.py ./nli_service/scorer.py
+COPY app.py ./nli_service/app.py
+COPY fetch_model.py ./nli_service/fetch_model.py
+COPY MODEL.lock ./nli_service/MODEL.lock
 
 # The approved checkpoint, fetched at the revision the lock names and checked against the lock.
 RUN if [ "$NLI_BAKE_MODEL" = "1" ]; then \
       mkdir -p "$(dirname "$NLI_MODEL_PATH")" && \
-      PYTHONPATH=/app/src python tools/fetch_nli_model.py --out "$NLI_MODEL_PATH"; \
+      PYTHONPATH=/app python -m nli_service.fetch_model --out "$NLI_MODEL_PATH"; \
     fi
 
 RUN useradd --create-home --uid 10002 nli && chown -R nli /app
 USER nli
 
-ENV PYTHONPATH=/app/src
+ENV PYTHONPATH=/app
 EXPOSE 8100
 
 # One worker: the model is loaded once per worker, and the checkpoint does not fit twice in memory.

@@ -40,6 +40,9 @@ class FakeClient:
 
 
 def scorer(response=None, error=None, **kwargs):
+    # startup_retries defaults to 0 here: these tests are about a broken service, and the retry path has its own
+    # tests. A test that wants the retry behaviour asks for it.
+    kwargs.setdefault("startup_retries", 0)
     client = FakeClient(response=response, error=error)
     return RemoteNliScorer("http://nli.internal:8100", client=client, **kwargs), client
 
@@ -113,9 +116,55 @@ class FailureTests(unittest.TestCase):
             s.score("a", "b")
 
     def test_a_transport_failure_raises(self):
-        s, _ = scorer(error=OSError("connection refused"))
+        # no startup retries here: this is the "the service is broken" case, not the "the service is booting" one
+        s, _ = scorer(error=OSError("connection refused"), startup_retries=0)
         with self.assertRaises(RemoteNliError):
             s.score("a", "b")
+
+    def test_a_service_that_is_booting_is_retried(self):
+        """A service that scales to zero has to start before it can answer, and booting takes longer than a call."""
+        attempts = []
+
+        class FlakyClient(FakeClient):
+            def post(self, url, json=None, headers=None, timeout=None):
+                attempts.append(url)
+                if len(attempts) < 3:
+                    raise OSError("connection refused")
+                return FakeResponse(body={"scores": [GOOD]})
+
+        client = FlakyClient()
+        s = RemoteNliScorer("http://nli.internal:8100", client=client, startup_retries=5, retry_backoff_seconds=0)
+        self.assertEqual(s.score("a", "b"), GOOD)
+        self.assertEqual(len(attempts), 3)
+
+    def test_a_service_that_never_comes_up_gives_up(self):
+        attempts = []
+
+        class DeadClient(FakeClient):
+            def post(self, url, json=None, headers=None, timeout=None):
+                attempts.append(url)
+                raise OSError("connection refused")
+
+        client = DeadClient()
+        s = RemoteNliScorer("http://nli.internal:8100", client=client, startup_retries=3, retry_backoff_seconds=0)
+        with self.assertRaises(RemoteNliError):
+            s.score("a", "b")
+        self.assertEqual(len(attempts), 4)  # the first attempt and three retries
+
+    def test_a_wrong_answer_is_not_retried(self):
+        """A protocol failure is an answer, and an answer must not be second-guessed."""
+        attempts = []
+
+        class WrongClient(FakeClient):
+            def post(self, url, json=None, headers=None, timeout=None):
+                attempts.append(url)
+                return FakeResponse(status_code=500, body={})
+
+        client = WrongClient()
+        s = RemoteNliScorer("http://nli.internal:8100", client=client, startup_retries=5, retry_backoff_seconds=0)
+        with self.assertRaises(RemoteNliError):
+            s.score("a", "b")
+        self.assertEqual(len(attempts), 1)
 
     def test_too_many_pairs_raises_before_any_request(self):
         s, client = scorer(ok_response([]))
@@ -150,7 +199,7 @@ class BuildTests(unittest.TestCase):
     def test_build_scorer_refuses_a_service_that_does_not_answer(self):
         # port 1 refuses the connection at once, so the test does not wait for a timeout
         with self.assertRaises(PipelineError):
-            build_scorer("http://127.0.0.1:1", timeout_seconds=1.0)
+            build_scorer("http://127.0.0.1:1", timeout_seconds=1.0, startup_retries=0)
 
 
 if __name__ == "__main__":

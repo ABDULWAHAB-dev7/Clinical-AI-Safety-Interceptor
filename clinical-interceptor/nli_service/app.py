@@ -12,8 +12,8 @@ service starts, so a service that cannot prove it is running the approved weight
 
 Run it with:
 
-    NLI_MODEL_PATH=models/nli/cross-encoder-nli-deberta-v3-base \\
-    NLI_MODEL_LOCK=models/nli/MODEL.lock \\
+    NLI_MODEL_PATH=nli_service/model/cross-encoder-nli-deberta-v3-base \\
+    NLI_MODEL_LOCK=nli_service/MODEL.lock \\
     python -m uvicorn nli_service.app:app --host 127.0.0.1 --port 8100
 """
 
@@ -25,8 +25,8 @@ from typing import Optional
 from fastapi import APIRouter, FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
-from interceptor.core.errors import PipelineError
-from interceptor.nli.scorer import NLIScorer
+from .errors import PipelineError
+from .scorer import NLIScorer
 
 MODEL_PATH_ENV = "NLI_MODEL_PATH"
 LOCK_PATH_ENV = "NLI_MODEL_LOCK"

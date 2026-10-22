@@ -16,6 +16,7 @@ that is fine.
 """
 
 import math
+import time
 from collections.abc import Mapping
 from typing import Optional
 
@@ -32,13 +33,19 @@ class RemoteNliError(Exception):
 class RemoteNliScorer:
     """Scores premise/hypothesis pairs with a self-hosted NLI inference service."""
 
-    def __init__(self, endpoint, *, timeout_seconds=5.0, token=None, client=None, path="/v1/score"):
+    def __init__(self, endpoint, *, timeout_seconds=5.0, token=None, client=None, path="/v1/score",
+                 startup_retries=40, retry_backoff_seconds=1.5):
         if not endpoint:
             raise ValueError("the NLI service endpoint is required")
         self.endpoint = str(endpoint).rstrip("/")
         self.timeout_seconds = float(timeout_seconds)
         self.token = token
         self.path = path
+        # A service that scales to zero has to boot before it can answer, and booting the model takes longer than
+        # one scoring call. A transport failure is retried; a protocol or model failure is not, because that is
+        # an answer and an answer must not be second-guessed.
+        self.startup_retries = int(startup_retries)
+        self.retry_backoff_seconds = float(retry_backoff_seconds)
         self._client = client
         self._owns_client = client is None
 
@@ -89,11 +96,19 @@ class RemoteNliScorer:
         headers = {"Accept": "application/json"}
         if self.token:
             headers["Authorization"] = f"Bearer {self.token}"
-        try:
-            response = self._http().post(self.endpoint + self.path, json=payload, headers=headers,
-                                         timeout=self.timeout_seconds)
-        except Exception as exc:  # any transport failure, including a timeout
-            raise RemoteNliError(f"the NLI service could not be reached: {type(exc).__name__}") from exc
+        attempt = 0
+        while True:
+            try:
+                response = self._http().post(self.endpoint + self.path, json=payload, headers=headers,
+                                             timeout=self.timeout_seconds)
+            except Exception as exc:  # a transport failure: the service may still be booting
+                attempt += 1
+                if attempt > self.startup_retries:
+                    raise RemoteNliError(
+                        f"the NLI service could not be reached: {type(exc).__name__}") from exc
+                time.sleep(self.retry_backoff_seconds)
+                continue
+            break
         if response.status_code != 200:
             raise RemoteNliError(f"the NLI service answered with HTTP {response.status_code}")
         try:
@@ -110,10 +125,12 @@ class RemoteNliScorer:
             self._client = None
 
 
-def build_scorer(endpoint: Optional[str], *, timeout_seconds: float, token: Optional[str] = None) -> RemoteNliScorer:
+def build_scorer(endpoint: Optional[str], *, timeout_seconds: float, token: Optional[str] = None,
+                 startup_retries: int = 40, retry_backoff_seconds: float = 1.5) -> RemoteNliScorer:
     """Builds a remote scorer and refuses to build one that is not usable."""
     if not endpoint:
         raise RuntimeError("INTERCEPTOR_NLI_MODE=remote needs INTERCEPTOR_NLI_ENDPOINT")
-    scorer = RemoteNliScorer(endpoint, timeout_seconds=timeout_seconds, token=token)
+    scorer = RemoteNliScorer(endpoint, timeout_seconds=timeout_seconds, token=token,
+                             startup_retries=startup_retries, retry_backoff_seconds=retry_backoff_seconds)
     scorer.warm_up()  # a service that cannot answer is a start-up failure, not a per-request failure
     return scorer

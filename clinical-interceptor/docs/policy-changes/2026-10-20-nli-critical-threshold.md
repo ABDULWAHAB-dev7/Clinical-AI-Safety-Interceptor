@@ -31,7 +31,7 @@ this project.
 
 ## Limits of this change (read before relying on it)
 
-The real model (`cross-encoder/nli-deberta-v3-base`, lock in `models/nli/MODEL.lock`) was checked on eight pairs. Two
+The real model (`cross-encoder/nli-deberta-v3-base`, lock in `nli_service/MODEL.lock`) was checked on eight pairs. Two
 results matter:
 
 1. **False contradiction above 0.80.** "Blood pressure is stable." against "Diabetes mellitus type 2, active." came back

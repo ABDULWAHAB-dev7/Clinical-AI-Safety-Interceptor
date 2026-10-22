@@ -17,6 +17,7 @@ Configuration (environment, read by build_default_app; the service refuses to st
   INTERCEPTOR_FHIR_DIR       encounter bundles for the legacy /v1/verify endpoint (default fixtures/fhir)
 """
 
+import dataclasses
 import json
 import os
 import re
@@ -215,6 +216,12 @@ def _load_nli(knowledge=None):
     timeout = 5.0
     if knowledge is not None:
         timeout = knowledge.thresholds.nli_timeout_seconds
+    override = os.environ.get("INTERCEPTOR_NLI_TIMEOUT_SECONDS")
+    if override:
+        # A service that scales to zero has to boot before it can answer, and booting the model takes longer than
+        # one scoring call. The budget for the NLI call is the whole budget, retries included, so it is set here
+        # and not only on the scorer.
+        timeout = float(override)
 
     if mode == "local":
         if not path:
@@ -248,6 +255,10 @@ def build_default_app():
         # Bearer-only drops the client certificate. It is allowed only for the labelled demo profile (G3 amendment).
         raise RuntimeError("INTERCEPTOR_AUTH_MODE=bearer needs INTERCEPTOR_DEPLOYMENT_PROFILE=vercel-demo")
     knowledge = load_knowledge()  # loaded here so the NLI timeout comes from the same policy file
+    nli_timeout = os.environ.get("INTERCEPTOR_NLI_TIMEOUT_SECONDS")
+    if nli_timeout:
+        knowledge = dataclasses.replace(knowledge, thresholds=dataclasses.replace(
+            knowledge.thresholds, nli_timeout_seconds=float(nli_timeout)))
     return create_app(
         auth_mode=auth_mode,
         policy_path=os.environ.get("INTERCEPTOR_POLICY", str(ROOT / "config/policy/default.yaml")),

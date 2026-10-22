@@ -1,4 +1,4 @@
-"""Regenerate models/nli/MODEL.lock from an approved checkpoint directory.
+"""Regenerate nli_service/MODEL.lock from an approved checkpoint directory.
 
     python tools/write_nli_lock.py --model <dir> --revision <revision>
 
@@ -17,11 +17,11 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT))
 
-from interceptor.nli.scorer import file_digests  # noqa: E402
+from nli_service.scorer import file_digests  # noqa: E402
 
-LOCK = ROOT / "models" / "nli" / "MODEL.lock"
+LOCK = ROOT / "nli_service" / "MODEL.lock"
 
 # The files that make up the model, in the order the loader reads them.
 MODEL_FILES = [

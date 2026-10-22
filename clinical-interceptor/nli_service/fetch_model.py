@@ -1,6 +1,6 @@
 """Fetch the approved NLI checkpoint, exactly as the lock file describes it.
 
-    python tools/fetch_nli_model.py --out models/nli/cross-encoder-nli-deberta-v3-base
+    python -m nli_service.fetch_model --out nli_service/model/cross-encoder-nli-deberta-v3-base
 
 The lock file is the source of truth: it names the repository, the revision and every file with its SHA-256.
 This tool fetches exactly those files, at that revision, into a clean directory and then checks them against the
@@ -19,11 +19,10 @@ import json
 import pathlib
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
-LOCK = ROOT / "models" / "nli" / "MODEL.lock"
-sys.path.insert(0, str(ROOT / "src"))
+from .scorer import file_digests
 
-from interceptor.nli.scorer import file_digests  # noqa: E402
+HERE = pathlib.Path(__file__).resolve().parent
+LOCK = HERE / "MODEL.lock"
 
 
 def main():

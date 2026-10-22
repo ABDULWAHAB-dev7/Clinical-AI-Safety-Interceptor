@@ -8,6 +8,6 @@ benchmark/corpus/mimic/
 data/
 
 # NLI checkpoints (PLAN 4.1): downloaded locally, never committed. The lock file is committed separately.
-models/nli/*/
+nli_service/model/
 .vercel
 .env*

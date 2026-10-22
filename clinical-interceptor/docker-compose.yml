@@ -4,8 +4,9 @@
 #   docker compose up --build
 #   docker compose --profile nli up --build    # also the NLI service, for the claims the rules cannot settle
 #
-# The NLI service needs the approved checkpoint. It is not in the repository, so point NLI_MODEL_DIR at the
-# directory that holds models/nli/cross-encoder-nli-deberta-v3-base and models/nli/MODEL.lock.
+# The NLI service needs the approved checkpoint. The image bakes it in and checks it against the lock, so
+# nothing has to be mounted. Set NLI_BAKE_MODEL=0 and mount a checkpoint yourself if you would rather not
+# carry the weights in an image.
 #
 # Published on 127.0.0.1 only. Clinical endpoints also need the client-certificate headers from a trusted proxy
 # (API 2.1), so this stack serves the health and unauthenticated routes on its own. Use scripts/dev_server.py for
@@ -46,15 +47,13 @@ services:
   nli:
     profiles: ["nli"]
     build:
-      context: .
-      dockerfile: nli_service/Dockerfile
+      context: ./nli_service
+      dockerfile: Dockerfile.vercel
     environment:
       NLI_MODEL_PATH: /models/nli/cross-encoder-nli-deberta-v3-base
-      NLI_MODEL_LOCK: /models/nli/MODEL.lock
+      NLI_MODEL_LOCK: /app/nli_service/MODEL.lock
       NLI_SERVICE_TOKEN: ${NLI_SERVICE_TOKEN:-}
       OMP_NUM_THREADS: "4"
-    volumes:
-      - ${NLI_MODEL_DIR:-../models}:/models:ro
     ports:
       - "127.0.0.1:${NLI_PORT:-18100}:8100"
     healthcheck:

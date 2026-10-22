@@ -11,7 +11,7 @@ Verifies a generated clinical document against the patient's FHIR record before 
 | 1. Ingestion (`/v1/verify`, size cap, scope check, request validation) | `api/app.py`, `api/document.py` | Built. `/v1/verify` runs the same engine as the `/v1/interceptor` endpoints (`api/engine.py`). |
 | 2. Decomposition | `core/decompose.py` | Rule-based stand-in: sentence segmentation, section headers, negation, typing. The LLM decomposer and Med-spaCy are not built. |
 | 3. Ground-truth retrieval | `fhir/bundle.py` | Reads a local FHIR Bundle fixture. The SMART-authenticated client is not built. |
-| 4. Verification matrix | `core/verify.py`, `nli/scorer.py` | Triple-based verifier for allergy, condition, lab and medication claims. The NLI scorer loads the approved checkpoint (see `models/nli/MODEL.lock`). |
+| 4. Verification matrix | `core/verify.py`, `nli_service/scorer.py` | Triple-based verifier for allergy, condition, lab and medication claims. The NLI scorer loads the approved checkpoint (see `nli_service/MODEL.lock`). |
 | 5. Attribution spans | `core/attribution.py` | Built, with precedence merge. |
 | 6. Decision engine | `core/policy.py` | Hard-stop rules R1 to R4 in code; configurable rule C1 from the policy file. |
 | Audit | `store/postgres.py`, `store/records.py` | One PostgreSQL transaction per request, into the DATABASE.md schema. Records hold hashes, codes and pseudo-IDs only. |
@@ -70,7 +70,7 @@ Module names below are relative to `src/interceptor/`. Deviations from the archi
 
 These block the parts not built. The code exposes an interface for each so it can be added without touching the fail-closed rules.
 
-1. **NLI model selection and license.** Without a model, NLI-routed assertions become `VERIFICATION_ERROR` and block. Free-text claims (plans, findings, conditions) therefore always block today. The checkpoint `cross-encoder/nli-deberta-v3-base` is approved and locked in `models/nli/MODEL.lock` (the weights are downloaded locally, never committed) and runs as a separate service; see [docs/nli-service.md](docs/nli-service.md).
+1. **NLI model selection and license.** Without a model, NLI-routed assertions become `VERIFICATION_ERROR` and block. Free-text claims (plans, findings, conditions) therefore always block today. The checkpoint `cross-encoder/nli-deberta-v3-base` is approved and locked in `nli_service/MODEL.lock` (the weights are downloaded locally, never committed) and runs as a separate service; see [docs/nli-service.md](docs/nli-service.md).
 2. **Review-store retention design.** Span text is returned only for delivered documents. No review store exists yet, so the dashboard cannot display the attributed document.
 3. **Upstream BAA coverage.** The proxy is built, but the prompt is sent to the upstream model, so a BAA (or a locally hosted model) is needed before it carries real PHI.
 
@@ -174,7 +174,7 @@ The certificate is checked first, then the token, then the scope, so an unauthen
 | `INTERCEPTOR_TRUSTED_PROXIES`, `INTERCEPTOR_PROXY_SECRET` | Address of the reverse proxy and the shared secret it sends |
 | `INTERCEPTOR_UPSTREAM_BASE_URL`, `INTERCEPTOR_UPSTREAM_API_KEY`, `INTERCEPTOR_MODEL_ROUTES` | OpenAI-compatible upstream and the logical-to-provider model map (JSON). Unset: the proxy endpoint refuses |
 | `INTERCEPTOR_RATE_LIMIT_PER_MINUTE` | Default 60 |
-| `INTERCEPTOR_NLI_MODEL_PATH`, `INTERCEPTOR_NLI_MODEL_LOCK` | A local NLI model directory and a `{"sha256": ...}` lock file. If set, the model must load, match the lock, and pass a warm-up check, or the service refuses to start |
+| `INTERCEPTOR_NLI_MODEL_PATH`, `INTERCEPTOR_NLI_MODEL_LOCK` | A local NLI model directory and a lock file. If set, the model must load, match the lock, and pass a warm-up check, or the service refuses to start |
 
 ### Run it for real (local)
 
@@ -205,7 +205,7 @@ cannot do.
 
 1. **HTTP trailers (Gate G4): resolved.** Latency values are not trailers. Streams carry `interception_time_ms` and `first_release_ms` in `stream.complete`; non-streaming responses carry `X-Interception-Time-MS` as a header. Approved 2026-10-20; see `docs/api-changes/2026-10-20-latency-trailers.md`.
 2. **`BLOCK_RESPONSE` mid-stream.** API.md does not say what it means once earlier sentences are already released. This build stops the stream, sends `stream.complete` with status `BLOCKED` and `finish_reason: content_filter`, and keeps what was already released (it was audited).
-3. **The NLI model (Gate G1).** The loader is built (`nli/scorer.py`): it reads the label order from the model's own config, refuses anything but entailment, neutral and contradiction, checks the directory hash against a lock file, and runs a warm-up check. It needs `sentence-transformers` and a checkpoint. The checkpoint `cross-encoder/nli-deberta-v3-base` is approved and locked in `models/nli/MODEL.lock` (the weights are downloaded locally, never committed). Without a configured model, claims that need it fail closed.
+3. **The NLI model (Gate G1).** The loader is built (`nli_service/scorer.py`): it reads the label order from the model's own config, refuses anything but entailment, neutral and contradiction, checks the directory hash against a lock file, and runs a warm-up check. It needs `sentence-transformers` and a checkpoint. The checkpoint `cross-encoder/nli-deberta-v3-base` is approved and locked in `nli_service/MODEL.lock` (the weights are downloaded locally, never committed). Without a configured model, claims that need it fail closed.
 4. **Per-client authorization.** API.md says reads return 404 for a patient the client may not see, but does not define which client may see which patient. Today any authenticated client can read any note or report.
 5. **Layout, preflight and tooling.** The code is in `src/interceptor/` (modules `core/`, `api/`, `fhir/`, `nli/`, `store/`, `intercept/`, not the plan's exact tree). Docker Compose, ruff, mypy and CI are set up; pre-commit is not.
 

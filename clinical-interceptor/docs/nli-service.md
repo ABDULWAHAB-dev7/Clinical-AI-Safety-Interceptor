@@ -8,32 +8,52 @@ document says which model, where it runs, and how it is wired in.
 | | |
 |---|---|
 | Checkpoint | `cross-encoder/nli-deberta-v3-base` |
+| Revision | `6c749ce3425cd33b46d187e45b92bbf96ee12ec7` |
 | Licence | Apache-2.0 (model card) |
-| Lock | `models/nli/MODEL.lock`, SHA-256 `435ef41d…` |
+| Lock | `nli_service/MODEL.lock`, a per-file manifest |
 | Parameters | 184,424,451 |
 | Measured on CPU | batch 1: p50 149.8 ms; batch 4: p50 299.3 ms; batch 8: p50 508.7 ms |
 
 Gate G1 approved this checkpoint; see [G1-nli-model.md](gates/G1-nli-model.md) for the selection memo and
 [G1-measurements.json](gates/G1-measurements.json) for the latency numbers. The checkpoint itself is **not** in the
-repository. `models/nli/*/` is in `.gitignore`, and the weights are about 6 GB.
+repository. `nli_service/model/` is in `.gitignore`, and the weights are about 750 MB.
 
 ### The lock file
 
-`models/nli/MODEL.lock` holds the SHA-256 of the **model directory**: every file's relative path and content
-hash, in a stable order. It is checked when the scorer loads, so a service that cannot prove it is running the
-approved weights refuses to start.
+`nli_service/MODEL.lock` names the repository, the revision, and every file that makes up the model with its
+SHA-256:
 
-The hash covers the whole `snapshot_download` output for the repository, which is 43 files: the safetensors
-weights, the tokenizer, `config.json`, the README, the PyTorch `pytorch_model.bin`, the ONNX exports, and the
-`.cache/huggingface` download metadata. Re-create the directory with the same tool and the hash reproduces:
-
-```bash
-huggingface-cli download cross-encoder/nli-deberta-v3-base \
-    --local-dir models/nli/cross-encoder-nli-deberta-v3-base
+```json
+{
+  "model": "cross-encoder/nli-deberta-v3-base",
+  "revision": "6c749ce3425cd33b46d187e45b92bbf96ee12ec7",
+  "license": "apache-2.0 (model card)",
+  "files": { "config.json": "...", "model.safetensors": "...", "tokenizer.json": "..." }
+}
 ```
 
-A directory that differs by even one byte fails the check. That is the point: it is a supply-chain check, not a
-version marker.
+The check happens when the scorer loads: every named file must be present and hash to its digest, or the service
+refuses to start.
+
+Only the files the service actually loads are pinned: the weights, the tokenizer and the config, seven files and
+about 750 MB. The exported ONNX graphs, the second copy of the weights in `pytorch_model.bin`, the README and the
+download tool's `.cache` directory are not, for two reasons. The service never loads them, and the download tool's
+bookkeeping holds the time of the download, so pinning it would make the lock match only the one directory it was
+made from.
+
+An earlier version of the lock hashed the whole download directory and was therefore neither reproducible nor
+portable: it verified on the machine that produced it and failed on the Linux host. The manifest fixes both.
+
+### Fetching the checkpoint
+
+The lock drives the download, so the same bytes arrive everywhere:
+
+```bash
+python -m nli_service.fetch_model --out nli_service/model/cross-encoder-nli-deberta-v3-base
+```
+
+The tool fetches exactly the files the lock names, at the revision the lock names, and then checks them. A file
+that does not match stops it. `tools/write_nli_lock.py` writes the manifest when the model is re-approved.
 
 ### Reading the label order
 
@@ -54,38 +74,68 @@ The mode is also inferred: if `INTERCEPTOR_NLI_MODEL_PATH` is set and no mode is
 
 ### Why a separate service exists
 
-A serverless function cannot hold torch and a 6 GB checkpoint. Vercel's function limit is 250 MB, and torch on
+A serverless function cannot hold torch and a 750 MB checkpoint. Vercel's function limit is 250 MB, and torch on
 its own is about 200 MB before the weights. So a deployment that runs the interceptor as a function needs the
 model somewhere else.
 
 The service is **part of the deployment, not a third party**. The premise is verbalised from the patient's record
 and the hypothesis is text from the note; both stay inside the operator's own network. The Gate G1 memo rules out
-a *hosted endpoint operated by someone else* ("a hosted endpoint would send the FHIR-derived premise text and
-the claim to a third party on every NLI call. The plan does not allow that path"), and a service the operator
-runs and controls is not that.
+a *hosted endpoint operated by someone else* ("a hosted endpoint would send the FHIR-derived premise text and the
+claim to a third party on every NLI call. The plan does not allow that path"), and a service the operator runs and
+controls is not that.
 
-The verifier cannot tell the two apart: `RemoteNliScorer` satisfies the same protocol as the local
-`NLIScorer`, so `core/verify.py` is unchanged and there is one implementation of the rules.
+The verifier cannot tell the two apart: `RemoteNliScorer` satisfies the same protocol as the local scorer, so
+`core/verify.py` is unchanged and there is one implementation of the rules.
+
+## The service package
+
+`nli_service/` is self-contained on purpose. The inference service is built as a container whose build context is
+that directory, so it cannot import from the interceptor package, and the two must not drift apart:
+
+```
+nli_service/
+  app.py           the FastAPI service
+  scorer.py        the local scorer: loads the checkpoint, checks the lock
+  errors.py        the error type the service raises
+  fetch_model.py   fetches the approved checkpoint at its locked revision
+  MODEL.lock       the approved artefact: every file with its digest
+  Dockerfile.vercel
+  requirements-nli.txt
+```
+
+The interceptor uses the same scorer through `interceptor.nli.scorer`, which re-exports it and translates the
+service's error type into the interceptor's taxonomy.
 
 ## Running the service
+
+### On Vercel
+
+The service is a Vercel project of its own, `clinical-interceptor-nli`, built from `nli_service/Dockerfile.vercel`
+and declared as a service in the repository's `vercel.json`. The image bakes the approved checkpoint in and the
+build fails if a byte does not match the lock, so what runs is a checkpoint that can be checked rather than one
+that has to be trusted.
+
+The interceptor reaches it at `https://clinical-interceptor-nli.vercel.app` with
+`INTERCEPTOR_NLI_MODE=remote`.
+
+A container function scales to zero when idle, and booting the model takes longer than one scoring call, so
+`INTERCEPTOR_NLI_TIMEOUT_SECONDS` sets the budget for an NLI call, retries included, and the client retries a
+transport failure rather than giving up at the first refusal. A protocol failure is not retried: that is an
+answer, and an answer must not be second-guessed.
 
 ### With Docker Compose
 
 ```bash
-export NLI_MODEL_DIR=/path/to/the/directory/that/holds/models
 docker compose --profile nli up --build
 ```
-
-The checkpoint is mounted, not baked into the image. `NLI_MODEL_DIR` must contain
-`nli/cross-encoder-nli-deberta-v3-base/` and `nli/MODEL.lock`.
 
 ### On its own
 
 ```bash
-pip install -r requirements-nli.txt
-export NLI_MODEL_PATH=models/nli/cross-encoder-nli-deberta-v3-base
-export NLI_MODEL_LOCK=models/nli/MODEL.lock
-export PYTHONPATH=src
+pip install -r nli_service/requirements-nli.txt
+export NLI_MODEL_PATH=nli_service/model/cross-encoder-nli-deberta-v3-base
+export NLI_MODEL_LOCK=nli_service/MODEL.lock
+export PYTHONPATH=.
 python -m uvicorn nli_service.app:app --host 127.0.0.1 --port 8100
 ```
 
@@ -116,9 +166,9 @@ The premise and the hypothesis are clinical text. The service does not log them.
 ## Batching
 
 The verifier scores every claim that needs the model in **one** call. The latency budget is for all NLI-routed
-claims in a note, not for each one, and one forward pass over a batch costs less per pair than one pass per pair
-(149.8 ms for a single pair against 74.8 ms per pair at batch size 4). Measured over a six-claim note through the
-remote service: 498 ms one call per claim against 264 ms batched, with identical results.
+claims in a note, and one forward pass over a batch costs less per pair than one pass per pair (149.8 ms for a
+single pair against 74.8 ms per pair at batch size 4). Measured over a six-claim note through the remote service:
+498 ms one call per claim against 264 ms batched, with identical results.
 
 A scorer without a `score_batch` method still works: the verifier falls back to one call per pair.
 
