@@ -26,6 +26,9 @@ BEGIN
 END
 $$;
 
+-- The roles must be able to see the schema's objects at all (a hand-made schema grants nothing by default).
+GRANT USAGE ON SCHEMA public TO interceptor_app, interceptor_audit, interceptor_safety;
+
 REVOKE ALL ON intercepted_notes, audit_traces, hallucination_events, hallucination_reviews, v_hallucination_current
     FROM interceptor_app, interceptor_audit, interceptor_safety;
 
