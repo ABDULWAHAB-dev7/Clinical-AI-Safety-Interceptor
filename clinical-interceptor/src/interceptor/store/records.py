@@ -216,6 +216,21 @@ class MemoryAuditStore:
 
     def record_override(self, *, report_id, claim_id, reviewer_ref, comment, note_status=None):
         """Appends a FALSE_POSITIVE review to the event for this claim, and optionally sets the note status."""
+        return self.record_review(report_id=report_id, claim_id=claim_id, resolution="FALSE_POSITIVE",
+                                  reviewer_ref=reviewer_ref, comment=comment, note_status=note_status)
+
+    def get_report_reviews(self, report_id):
+        """Every review of a finding in this report: event_id, claim_id, resolution, reviewed_at."""
+        self._check()
+        report = self.get_report(report_id)
+        if report is None:
+            return []
+        claim_of = {e["event_id"]: e["claim_id"] for e in report["events"]}
+        return [{"event_id": r["event_id"], "claim_id": claim_of[r["event_id"]], "resolution": r["resolution"],
+                 "reviewed_at": r["reviewed_at"]} for r in self.reviews if r["event_id"] in claim_of]
+
+    def record_review(self, *, report_id, claim_id, resolution, reviewer_ref, comment, note_status=None):
+        """Appends one review with the given resolution to the event for this claim, and optionally sets the note status."""
         self._check()
         report = self.get_report(report_id)
         event = None if report is None else next((e for e in report["events"] if e["claim_id"] == claim_id), None)
@@ -223,7 +238,7 @@ class MemoryAuditStore:
             raise OverrideRefused("no finding for this span in the report")
         if any(r["event_id"] == event["event_id"] for r in self.reviews):
             raise OverrideRefused("this finding was already reviewed")
-        review = {"review_id": str(uuid.uuid4()), "event_id": event["event_id"], "resolution": "FALSE_POSITIVE",
+        review = {"review_id": str(uuid.uuid4()), "event_id": event["event_id"], "resolution": resolution,
                   "reviewer_ref": reviewer_ref, "comment": comment, "reviewed_at": self.clock()}
         self.reviews.append(review)
         if note_status is not None:

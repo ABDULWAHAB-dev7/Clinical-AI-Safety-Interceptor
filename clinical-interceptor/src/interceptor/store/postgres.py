@@ -405,7 +405,29 @@ class PostgresAuditStore:
             raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
 
     def record_override(self, *, report_id, claim_id, reviewer_ref, comment, note_status=None):
-        """One transaction: the FALSE_POSITIVE review (append-only) and, if given, the note status."""
+        return self.record_review(report_id=report_id, claim_id=claim_id, resolution="FALSE_POSITIVE",
+                                  reviewer_ref=reviewer_ref, comment=comment, note_status=note_status)
+
+    def get_report_reviews(self, report_id):
+        try:
+            with self._connect() as conn:
+                rows = conn.execute(
+                    """
+                    SELECT e.event_id, e.claim_id, r.resolution, r.reviewed_at
+                    FROM hallucination_events e
+                    JOIN audit_traces t ON t.trace_id = e.trace_id
+                    JOIN hallucination_reviews r ON r.event_id = e.event_id
+                    WHERE t.stage = 'ATTRIBUTE' AND t.output_payload->>'report_id' = %s
+                    ORDER BY r.reviewed_at
+                    """,
+                    (report_id,),
+                ).fetchall()
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+        return [{"event_id": str(r[0]), "claim_id": r[1], "resolution": r[2], "reviewed_at": r[3]} for r in rows]
+
+    def record_review(self, *, report_id, claim_id, resolution, reviewer_ref, comment, note_status=None):
+        """One transaction: the review (append-only) with this resolution and, if given, the note status."""
         try:
             with self._connect() as conn:
                 found = conn.execute(
@@ -424,9 +446,9 @@ class PostgresAuditStore:
                 review = conn.execute(
                     """
                     INSERT INTO hallucination_reviews (event_id, resolution, reviewer_ref, comment)
-                    VALUES (%s, 'FALSE_POSITIVE', %s, %s) RETURNING review_id, reviewed_at
+                    VALUES (%s, %s, %s, %s) RETURNING review_id, reviewed_at
                     """,
-                    (event_id, reviewer_ref, comment),
+                    (event_id, resolution, reviewer_ref, comment),
                 ).fetchone()
                 if note_status is not None:
                     conn.execute("UPDATE intercepted_notes SET pipeline_status = %s WHERE note_id = %s",

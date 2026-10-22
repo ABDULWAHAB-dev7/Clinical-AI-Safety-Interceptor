@@ -265,6 +265,93 @@ def override(body: OverrideRequest, request: Request):
     }, status_code=201, headers={"Location": f"/v1/interceptor/audit/reports/{body.report_id}"})
 
 
+ACTION_RESOLUTION = {"ACCEPT": "FALSE_POSITIVE", "EDIT": "CORRECTED", "REJECT": "CONFIRMED_ERROR"}
+
+
+class AcknowledgeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    report_id: uuid.UUID
+    span_id: uuid.UUID
+    action: Literal["ACCEPT", "EDIT", "REJECT"]
+    comment: str = Field(min_length=3, max_length=200)
+    clinician_signature: str = Field(min_length=3, max_length=200)
+
+
+@router.post("/acknowledge", dependencies=[require_scope("acknowledge")])
+def acknowledge(body: AcknowledgeRequest, request: Request):
+    """A clinician answers one WARNING finding: accept the text, edit it, or reject it (PRD journey B).
+
+    ACCEPT records FALSE_POSITIVE, EDIT records CORRECTED and REJECT records CONFIRMED_ERROR. Only warnings are handled
+    here, because a critical finding needs the documented override. The review is appended, never edited. The comment is
+    stored as a hash and the signature as a pseudonym, as for the override.
+    """
+    state = request.app.state
+    report = _store_call(state.store.get_report, str(body.report_id))
+    if report is None or not can_see_patient(request, report["patient_pseudo_id"]):
+        raise InterceptionError("REPORT_NOT_FOUND", "The report is unknown or not visible to the caller.", "report_id")
+    authorize_patient(request, report["patient_pseudo_id"])
+
+    span = next((s for s in report["payload"]["attribution"] if s["span_id"] == str(body.span_id)), None)
+    if span is None or span.get("claim_id") is None:
+        raise InterceptionError("OVERRIDE_NOT_ALLOWED", "The span is not in this report.", "span_id")
+    event = next((e for e in report["events"] if e["claim_id"] == span["claim_id"]), None)
+    if event is None or event["risk_severity"] != "WARNING":
+        raise InterceptionError("OVERRIDE_NOT_ALLOWED",
+                                "Only a warning can be acknowledged. A critical finding needs an override.", "span_id")
+
+    key = state.pseudo_key
+    reviewer_ref = "rev_" + hmac.new(key, body.clinician_signature.strip().lower().encode("utf-8"),
+                                     hashlib.sha256).hexdigest()[:16]
+    comment_hash = hashlib.sha256(body.comment.strip().encode("utf-8")).hexdigest()
+    client_hash = hmac.new(key, str(request.state.client_id).encode("utf-8"), hashlib.sha256).hexdigest()[:16]
+    try:
+        recorded = state.store.record_review(
+            report_id=str(body.report_id), claim_id=span["claim_id"], resolution=ACTION_RESOLUTION[body.action],
+            reviewer_ref=reviewer_ref, comment=f"comment_sha256={comment_hash};client={client_hash}")
+    except OverrideRefused as exc:
+        raise InterceptionError("OVERRIDE_NOT_ALLOWED", str(exc), "span_id")
+    except PipelineError:
+        raise InterceptionError("AUDIT_WRITE_FAILED", "The audit store is unavailable. No content was released.")
+    return JSONResponse({
+        "acknowledgment_id": recorded["review_id"],
+        "report_id": str(body.report_id),
+        "span_id": str(body.span_id),
+        "event_id": recorded["event_id"],
+        "resolution": ACTION_RESOLUTION[body.action],
+        "reviewed_at": iso(recorded["reviewed_at"]),
+    }, status_code=201, headers={"Location": f"/v1/interceptor/audit/reports/{body.report_id}/review-status"})
+
+
+@router.get("/audit/reports/{report_id}/review-status", dependencies=[require_scope("read")])
+def review_status(report_id: str, request: Request):
+    """Which findings still wait for a clinician. The note can be signed when none are open (PRD journey B)."""
+    store = request.app.state.store
+    report = _store_call(store.get_report, report_id) if _is_uuid(report_id) else None
+    if report is None or not can_see_patient(request, report["patient_pseudo_id"]):
+        raise InterceptionError("REPORT_NOT_FOUND", "The report is unknown or not visible to the caller.", "report_id")
+    reviewed = {r["claim_id"]: r for r in _store_call(store.get_report_reviews, report_id)}
+    findings = []
+    for e in report["events"]:
+        if e["risk_severity"] not in ("WARNING", "CRITICAL"):
+            continue
+        r = reviewed.get(e["claim_id"])
+        findings.append({"claim_id": e["claim_id"], "risk_severity": e["risk_severity"],
+                         "resolution": r["resolution"] if r else "OPEN",
+                         "reviewed_at": iso(r["reviewed_at"]) if r else None})
+    note = _store_call(store.get_note, report["note_id"])
+    status = note["pipeline_status"] if note else report["payload"]["pipeline_status"]
+    blocking = status == OVERRIDE_BLOCKING_STATUS  # an override moves the note off BLOCKED
+    open_count = sum(1 for f in findings if f["resolution"] == "OPEN")
+    return {
+        "report_id": report_id,
+        "pipeline_status": status,
+        "findings": findings,
+        "open_count": open_count,
+        # a blocked report needs an override first, so it is never ready to sign here
+        "ready_to_sign": open_count == 0 and not blocking,
+    }
+
+
 @router.get("/notes/{note_id}", dependencies=[require_scope("read")])
 def read_note(note_id: str, request: Request):
     store = request.app.state.store
