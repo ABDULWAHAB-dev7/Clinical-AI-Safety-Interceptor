@@ -8,5 +8,5 @@
     }
   },
   "rewrites": [{ "source": "/(.*)", "destination": { "service": "nli" } }],
-  "crons": [{ "path": "/v1/health", "schedule": "*/5 * * * *" }]
+  "crons": [{ "path": "/v1/health", "schedule": "*/3 * * * *" }]
 }
