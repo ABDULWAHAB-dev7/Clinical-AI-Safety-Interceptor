@@ -6,7 +6,7 @@ import unittest
 
 from interceptor.core.errors import ErrorClass, PipelineError
 from interceptor.core.verify import verify_claim
-from interceptor.nli.scorer import NLIScorer, directory_sha256
+from interceptor.nli.scorer import NLIScorer, directory_sha256, file_digests, files_sha256
 from tests.support_verify import KNOWLEDGE, case_triples
 
 
@@ -144,6 +144,89 @@ class LockFileTests(unittest.TestCase):
                 (a / name).write_bytes(content)
                 (b / name).write_bytes(content)
             self.assertEqual(directory_sha256(a), directory_sha256(b))
+
+    def test_the_download_tools_bookkeeping_is_left_out(self):
+        """huggingface_hub writes the download time into .cache, so hashing it would make the lock unreproducible."""
+        tmp, path = model_dir()
+        with tmp:
+            cache = path / ".cache" / "huggingface" / "download"
+            cache.mkdir(parents=True)
+            (cache / "config.json.metadata").write_bytes(b"1792477719.6249244")
+            first = directory_sha256(path)
+            (cache / "config.json.metadata").write_bytes(b"1792477999.0000000")
+            self.assertEqual(first, directory_sha256(path))
+
+    def test_a_directory_with_and_without_the_bookkeeping_hash_the_same(self):
+        """Two downloads of the same revision must hash the same, whatever the tool wrote down while doing it."""
+        tmp_a, a = model_dir()
+        tmp_b, b = model_dir()
+        with tmp_a, tmp_b:
+            (a / "model.bin").write_bytes(b"weights")
+            (b / "model.bin").write_bytes(b"weights")
+            cache = a / ".cache" / "huggingface" / "download"
+            cache.mkdir(parents=True)
+            (cache / "model.bin.metadata").write_bytes(b"1792477719.6249244")
+            self.assertEqual(directory_sha256(a), directory_sha256(b))
+
+    def test_a_file_outside_the_bookkeeping_still_changes_the_hash(self):
+        tmp_a, a = model_dir()
+        tmp_b, b = model_dir(extra_file=b"other")
+        with tmp_a, tmp_b:
+            self.assertNotEqual(directory_sha256(a), directory_sha256(b))
+
+
+class ManifestLockTests(unittest.TestCase):
+    """The lock names every file of the model with its digest. That is what a host fetches and checks."""
+
+    def write_manifest_lock(self, directory, digests, extra=None):
+        lock = pathlib.Path(directory) / "MODEL.lock.json"
+        payload = {"model": "cross-encoder/nli-deberta-v3-base",
+                   "revision": "6c749ce3425cd33b46d187e45b92bbf96ee12ec7", "files": digests}
+        if extra:
+            payload.update(extra)
+        lock.write_text(json.dumps(payload), encoding="utf-8")
+        return lock
+
+    def test_a_matching_manifest_loads(self):
+        tmp, path = model_dir()
+        with tmp, tempfile.TemporaryDirectory() as lock_dir:
+            digests = file_digests(path, ["config.json", "model.bin"])
+            scorer(path, lock=self.write_manifest_lock(lock_dir, digests))
+
+    def test_a_tampered_file_is_refused(self):
+        tmp, path = model_dir()
+        with tmp, tempfile.TemporaryDirectory() as lock_dir:
+            digests = file_digests(path, ["config.json", "model.bin"])
+            lock = self.write_manifest_lock(lock_dir, digests)
+            (path / "model.bin").write_bytes(b"tampered")
+            with self.assertRaises(PipelineError) as ctx:
+                scorer(path, lock=lock)
+            self.assertEqual(ctx.exception.error_class, ErrorClass.POLICY_LOAD_FAILURE)
+
+    def test_a_missing_file_is_refused(self):
+        tmp, path = model_dir()
+        with tmp, tempfile.TemporaryDirectory() as lock_dir:
+            digests = file_digests(path, ["config.json", "model.bin"])
+            lock = self.write_manifest_lock(lock_dir, digests)
+            (path / "model.bin").unlink()
+            with self.assertRaises(PipelineError):
+                scorer(path, lock=lock)
+
+    def test_a_lock_with_neither_manifest_nor_digest_is_refused(self):
+        tmp, path = model_dir()
+        with tmp, tempfile.TemporaryDirectory() as lock_dir:
+            lock = pathlib.Path(lock_dir) / "MODEL.lock.json"
+            lock.write_text(json.dumps({"model": "x"}), encoding="utf-8")
+            with self.assertRaises(PipelineError):
+                scorer(path, lock=lock)
+
+    def test_the_manifest_digest_is_stable_and_order_independent(self):
+        tmp, path = model_dir()
+        with tmp:
+            digests = file_digests(path, ["config.json", "model.bin"])
+            self.assertEqual(files_sha256(path, ["config.json", "model.bin"]),
+                             files_sha256(path, ["model.bin", "config.json"]))
+            self.assertEqual(digests["model.bin"], hashlib.sha256((path / "model.bin").read_bytes()).hexdigest())
 
 
 class WarmUpAndIntegrationTests(unittest.TestCase):

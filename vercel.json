@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "nli": {
+      "root": "clinical-interceptor",
+      "entrypoint": "nli_service/Dockerfile.vercel",
+      "runtime": "container"
+    }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": { "service": "nli" } }]
+}

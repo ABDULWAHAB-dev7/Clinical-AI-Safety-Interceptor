@@ -8,6 +8,7 @@
 torch==2.14.1
 sentence-transformers==6.1.0
 transformers==5.20.2
+huggingface_hub==1.33.0   # tools/fetch_nli_model.py fetches the approved checkpoint at its locked revision
 
 fastapi>=0.110
 uvicorn>=0.29
