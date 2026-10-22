@@ -230,10 +230,13 @@ def _load_nli(knowledge=None):
         timeout = knowledge.thresholds.nli_timeout_seconds
     override = os.environ.get("INTERCEPTOR_NLI_TIMEOUT_SECONDS")
     if override:
-        # A service that scales to zero has to boot before it can answer, and booting the model takes longer than
-        # one scoring call. The budget for the NLI call is the whole budget, retries included, so it is set here
-        # and not only on the scorer.
+        # The budget for the NLI call is the whole budget, retries included, so it is set here and not only on
+        # the scorer. A service that scales to zero has to boot before it can answer, and booting the model takes
+        # longer than one scoring call.
         timeout = float(override)
+    # One HTTP call gets its own, shorter budget. Without the split, a single hung connection would hold the
+    # request for the whole budget.
+    call_timeout = float(os.environ.get("INTERCEPTOR_NLI_CALL_TIMEOUT_SECONDS", "10"))
 
     if mode == "local":
         if not path:
@@ -247,7 +250,8 @@ def _load_nli(knowledge=None):
     if mode == "remote":
         from interceptor.nli.remote import build_scorer
 
-        return build_scorer(endpoint, timeout_seconds=timeout, token=os.environ.get("INTERCEPTOR_NLI_TOKEN"))
+        return build_scorer(endpoint, timeout_seconds=call_timeout, budget_seconds=timeout,
+                            token=os.environ.get("INTERCEPTOR_NLI_TOKEN"))
 
     raise RuntimeError("INTERCEPTOR_NLI_MODE must be 'none', 'local' or 'remote'")
 

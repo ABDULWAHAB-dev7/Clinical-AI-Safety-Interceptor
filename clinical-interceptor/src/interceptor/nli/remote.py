@@ -35,14 +35,21 @@ class RemoteNliUnavailable(RemoteNliError):
 
 
 class RemoteNliScorer:
-    """Scores premise/hypothesis pairs with a self-hosted NLI inference service."""
+    """Scores premise/hypothesis pairs with a self-hosted NLI inference service.
 
-    def __init__(self, endpoint, *, timeout_seconds=5.0, token=None, client=None, path="/v1/score",
-                 startup_retries=40, retry_backoff_seconds=1.5):
+    Two different budgets, because they answer different questions. `timeout_seconds` is how long one HTTP call may
+    take: a call that has not answered in ten seconds is not going to. `budget_seconds` is the whole time the
+    scorer may spend, retries included, and it is what covers a service that is still booting. Without the
+    split, one hung connection would hold the request for the whole budget.
+    """
+
+    def __init__(self, endpoint, *, timeout_seconds=10.0, budget_seconds=None, token=None, client=None,
+                 path="/v1/score", startup_retries=40, retry_backoff_seconds=1.5):
         if not endpoint:
             raise ValueError("the NLI service endpoint is required")
         self.endpoint = str(endpoint).rstrip("/")
         self.timeout_seconds = float(timeout_seconds)
+        self.budget_seconds = float(budget_seconds if budget_seconds is not None else timeout_seconds)
         self.token = token
         self.path = path
         # A service that scales to zero has to boot before it can answer, and booting the model takes longer than
@@ -110,6 +117,7 @@ class RemoteNliScorer:
         headers = {"Accept": "application/json"}
         if self.token:
             headers["Authorization"] = f"Bearer {self.token}"
+        deadline = time.monotonic() + self.budget_seconds
         attempt = 0
         while True:
             try:
@@ -117,10 +125,10 @@ class RemoteNliScorer:
                                              timeout=self.timeout_seconds)
             except Exception as exc:  # a transport failure: the service may still be booting
                 attempt += 1
-                if attempt > self.startup_retries:
+                if attempt > self.startup_retries or time.monotonic() >= deadline:
                     raise RemoteNliUnavailable(
                         f"the NLI service could not be reached: {type(exc).__name__}") from exc
-                time.sleep(self.retry_backoff_seconds)
+                time.sleep(min(self.retry_backoff_seconds, max(0.0, deadline - time.monotonic())))
                 continue
             break
         if response.status_code != 200:
@@ -139,8 +147,8 @@ class RemoteNliScorer:
             self._client = None
 
 
-def build_scorer(endpoint: Optional[str], *, timeout_seconds: float, token: Optional[str] = None,
-                 startup_retries: int = 40, retry_backoff_seconds: float = 1.5,
+def build_scorer(endpoint: Optional[str], *, timeout_seconds: float, budget_seconds: Optional[float] = None,
+                 token: Optional[str] = None, startup_retries: int = 40, retry_backoff_seconds: float = 1.5,
                  warmup_retries: int = 3) -> RemoteNliScorer:
     """Builds a remote scorer.
 
@@ -150,7 +158,7 @@ def build_scorer(endpoint: Optional[str], *, timeout_seconds: float, token: Opti
     """
     if not endpoint:
         raise RuntimeError("INTERCEPTOR_NLI_MODE=remote needs INTERCEPTOR_NLI_ENDPOINT")
-    scorer = RemoteNliScorer(endpoint, timeout_seconds=timeout_seconds, token=token,
+    scorer = RemoteNliScorer(endpoint, timeout_seconds=timeout_seconds, budget_seconds=budget_seconds, token=token,
                              startup_retries=startup_retries, retry_backoff_seconds=retry_backoff_seconds)
     try:
         scorer.warm_up()

@@ -4,6 +4,7 @@ A remote scorer that fails open would be a hole in the fail-closed design, so mo
 failures: none of them may produce a score.
 """
 
+import time
 import unittest
 
 from interceptor.core.errors import ErrorClass, PipelineError
@@ -165,6 +166,30 @@ class FailureTests(unittest.TestCase):
         with self.assertRaises(RemoteNliError):
             s.score("a", "b")
         self.assertEqual(len(attempts), 1)
+
+    def test_the_retry_budget_is_separate_from_the_call_timeout(self):
+        """One hung call must not hold the request for the whole budget.
+
+        The call timeout bounds a single request. The budget bounds everything, retries included, and it is what
+        covers a service that is still booting.
+        """
+        attempts = []
+
+        class DeadClient(FakeClient):
+            def post(self, url, json=None, headers=None, timeout=None):
+                attempts.append(timeout)
+                raise OSError("connection refused")
+
+        client = DeadClient()
+        s = RemoteNliScorer("http://nli.internal:8100", client=client, timeout_seconds=2.0, budget_seconds=0.2,
+                            startup_retries=100, retry_backoff_seconds=0.05)
+        started = time.monotonic()
+        with self.assertRaises(RemoteNliUnavailable):
+            s.score("a", "b")
+        elapsed = time.monotonic() - started
+        self.assertLess(elapsed, 5.0)  # the budget stopped it, not the retry count
+        self.assertTrue(attempts)
+        self.assertTrue(all(t == 2.0 for t in attempts))  # each call used the call timeout
 
     def test_too_many_pairs_raises_before_any_request(self):
         s, client = scorer(ok_response([]))
