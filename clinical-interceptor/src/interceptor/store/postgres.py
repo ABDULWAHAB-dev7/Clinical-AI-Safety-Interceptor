@@ -132,7 +132,13 @@ def _shared_pool(dsn, connect_timeout, pool_size):
             pool = ConnectionPool(dsn, min_size=1, max_size=pool_size, timeout=connect_timeout + 3,
                                   # No automatic prepared statements: a cached plan points at the old table IDs
                                   # after a migration or a schema reset, and every later call on it would fail.
-                                  kwargs={"connect_timeout": connect_timeout, "prepare_threshold": None}, open=True)
+                                  kwargs={"connect_timeout": connect_timeout, "prepare_threshold": None},
+                                  # Check a connection before handing it out. A hosted database closes idle
+                                  # connections, and the pool cannot tell until one is used: without this the
+                                  # first request after an idle period gets a dead connection, fails to write
+                                  # its audit row, and blocks a note for the wrong reason. A failed check
+                                  # discards the connection and the pool supplies another.
+                                  check=ConnectionPool.check_connection, open=True)
             _POOLS[key] = pool
         return pool
 

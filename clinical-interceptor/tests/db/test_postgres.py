@@ -114,5 +114,26 @@ class PostgresAuditTests(unittest.TestCase):
             self.new_note(conn, pid=PID_B, sha="8" * 64)
 
 
+@unittest.skipUnless(DSN, "set INTERCEPTOR_TEST_DSN to run the database tests")
+class PoolRecoveryTests(unittest.TestCase):
+    """A connection the server closed while it sat in the pool must not fail the next request.
+
+    A hosted database suspends or closes idle connections. The pool cannot tell that a connection is dead until
+    it is used, so without a check the first request after an idle period borrows the corpse, fails to write its
+    audit row, and blocks the note for a reason that has nothing to do with the note.
+    """
+
+    def test_a_closed_connection_is_replaced_instead_of_handed_out(self):
+        store = db.PostgresAuditStore(DSN, pool_size=1)  # its own single-connection pool, so the test is exact
+        self.assertTrue(store.ping())
+        with store._connect() as conn:
+            backend_pid = conn.execute("SELECT pg_backend_pid()").fetchone()[0]
+        # The connection is back in the pool, still believed good. The server now drops it.
+        with psycopg.connect(DSN, autocommit=True) as killer:
+            terminated = killer.execute("SELECT pg_terminate_backend(%s)", (backend_pid,)).fetchone()[0]
+        self.assertTrue(terminated, "the test could not terminate the pooled backend")
+        self.assertTrue(store.ping())  # the dead one was discarded and another supplied
+
+
 if __name__ == "__main__":
     unittest.main()

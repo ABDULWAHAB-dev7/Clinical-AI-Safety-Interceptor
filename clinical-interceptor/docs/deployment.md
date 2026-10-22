@@ -68,6 +68,11 @@ The schema is not idempotent, so it only runs against an empty database. To re-a
 Neon's pooled DSN is the right one for the function: the store opens a pool per process and holds a connection for
 the length of one request. The unpooled DSN is for one-off work such as applying the schema.
 
+The store checks a borrowed connection before it uses it. A hosted database closes idle connections, and the pool
+cannot tell that a connection is dead until one is used; without the check the first request after an idle period
+borrowed the corpse, failed to write its audit row and blocked a note for a reason that had nothing to do with the
+note. The check costs one round trip, and the pool discards a connection that fails it and supplies another.
+
 ## What the demo can and cannot do
 
 | Capability | Status on Vercel |
