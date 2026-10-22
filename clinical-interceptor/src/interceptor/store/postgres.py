@@ -404,6 +404,31 @@ class PostgresAuditStore:
         except psycopg.Error as exc:
             raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
 
+    def mark_note_failed(self, note_id):
+        try:
+            with self._connect() as conn:
+                conn.execute("UPDATE intercepted_notes SET pipeline_status = 'FAILED', completed_at = now() "
+                             "WHERE note_id = %s", (note_id,))
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+
+    def list_notes_by_status(self, status, limit=100):
+        try:
+            with self._connect() as conn:
+                rows = conn.execute(
+                    """
+                    SELECT note_id, patient_pseudo_id, encounter_pseudo_id, source_system, note_type, claim_count,
+                           pipeline_status, received_at, completed_at
+                    FROM intercepted_notes WHERE pipeline_status = %s ORDER BY received_at DESC LIMIT %s
+                    """,
+                    (status, limit),
+                ).fetchall()
+        except psycopg.Error as exc:
+            raise PipelineError(ErrorClass.AUDIT_WRITE_FAILURE, type(exc).__name__)
+        keys = ("note_id", "patient_pseudo_id", "encounter_pseudo_id", "source_system", "note_type", "claim_count",
+                "pipeline_status", "received_at", "completed_at")
+        return [dict(zip(keys, r)) | {"note_id": str(r[0])} for r in rows]
+
     def record_override(self, *, report_id, claim_id, reviewer_ref, comment, note_status=None):
         return self.record_review(report_id=report_id, claim_id=claim_id, resolution="FALSE_POSITIVE",
                                   reviewer_ref=reviewer_ref, comment=comment, note_status=note_status)

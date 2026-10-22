@@ -352,6 +352,19 @@ def review_status(report_id: str, request: Request):
     }
 
 
+@router.get("/quarantine", dependencies=[require_scope("read")])
+def quarantine(request: Request, limit: int = 50):
+    """Notes held back as BLOCKED and not yet overridden (PRD journey C). IDs and status only, never note text."""
+    limit = max(1, min(limit, 200))
+    rows = _store_call(request.app.state.store.list_notes_by_status, "BLOCKED", 200)
+    visible = [n for n in rows if can_see_patient(request, n["patient_pseudo_id"])][:limit]
+    return {"count": len(visible), "notes": [
+        {"note_id": n["note_id"], "patient_pseudo_id": n["patient_pseudo_id"],
+         "encounter_pseudo_id": n["encounter_pseudo_id"], "note_type": n["note_type"],
+         "claim_count": n["claim_count"], "blocked_at": iso(n["completed_at"] or n["received_at"])}
+        for n in visible]}
+
+
 @router.get("/notes/{note_id}", dependencies=[require_scope("read")])
 def read_note(note_id: str, request: Request):
     store = request.app.state.store

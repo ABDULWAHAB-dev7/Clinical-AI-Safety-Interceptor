@@ -214,6 +214,22 @@ class MemoryAuditStore:
         ids = {e.claim_id: self._add_event(trace_id, note_id, note["patient_pseudo_id"], e) for e in events}
         return trace_id, ids
 
+    def mark_note_failed(self, note_id):
+        """The note could not be verified. It stays visible as FAILED until it is checked again."""
+        self._check()
+        note = self._note_by_id(note_id)
+        if note is not None:
+            note["pipeline_status"], note["status"], note["completed_at"] = "FAILED", "FAILED", self.clock()
+
+    def list_notes_by_status(self, status, limit=100):
+        """Notes with this pipeline status, newest first, without any content."""
+        self._check()
+        rows = [n for n in self.notes.values() if n["pipeline_status"] == status]
+        rows.sort(key=lambda n: n["received_at"], reverse=True)
+        keys = ("note_id", "patient_pseudo_id", "encounter_pseudo_id", "source_system", "note_type", "claim_count",
+                "pipeline_status", "received_at", "completed_at")
+        return [{k: n[k] for k in keys} for n in rows[:limit]]
+
     def record_override(self, *, report_id, claim_id, reviewer_ref, comment, note_status=None):
         """Appends a FALSE_POSITIVE review to the event for this claim, and optionally sets the note status."""
         return self.record_review(report_id=report_id, claim_id=claim_id, resolution="FALSE_POSITIVE",

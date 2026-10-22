@@ -22,6 +22,7 @@ from interceptor.core.policy import R4
 from interceptor.core.verify import VerificationError, verify_claims
 from interceptor.store.records import EventRecord, StageRecord
 
+from . import notify
 from .context import load_patient_context
 from .errors import InterceptionError
 
@@ -108,6 +109,7 @@ def verify(state, *, patient_pid, raw_bundle, claims, note_id=None):
     try:
         outcome = verify_claims(inputs, triples, state.knowledge, VERIFIER_VERSION, state.nli_model)
     except VerificationError:
+        _mark_failed(state, note_id, patient_pid)  # journey D: the note shows as failed, and the team is told
         raise InterceptionError("INTERCEPT_VERIFIER_UNAVAILABLE",
                                 "A claim cannot be verified without the NLI verifier. No content was released.")
     results = outcome.results
@@ -210,6 +212,11 @@ def audit(state, *, patient_pid, note_id, verify_trace_ids, claims, results, att
     except PipelineError:
         raise InterceptionError("AUDIT_WRITE_FAILED", "The audit store is unavailable. No content was released.")
 
+    if blocked:  # journey C: the note is quarantined and the safety team is told
+        notify.send(state, {"event": notify.NOTE_QUARANTINED, "note_id": note_id, "report_id": report_id,
+                            "patient_pseudo_id": patient_pid, "rules": hard_stop_rules,
+                            "critical_count": sum(1 for e in events if e.risk_severity == "CRITICAL")})
+
     event_by_claim = {claim_id: (event_id, detected_at) for claim_id, event_id, detected_at in refs.events}
     report = {
         "trace_id": refs.trace_id, "note_id": note_id, "patient_pseudo_id": patient_pid,
@@ -223,6 +230,18 @@ def audit(state, *, patient_pid, note_id, verify_trace_ids, claims, results, att
         ],
     }
     return report_view(report, replay=False)
+
+
+def _mark_failed(state, note_id, patient_pid):
+    """Best effort: the request is already failing closed, so a store error here changes nothing for the caller."""
+    if note_id is None:
+        return
+    try:
+        state.store.mark_note_failed(str(note_id))
+    except PipelineError:
+        pass
+    notify.send(state, {"event": notify.VERIFICATION_UNAVAILABLE, "note_id": str(note_id),
+                        "patient_pseudo_id": patient_pid})
 
 
 def _check_claims_belong_to_note(store, note, note_id, claims):

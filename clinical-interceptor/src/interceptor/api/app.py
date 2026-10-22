@@ -15,6 +15,7 @@ Configuration (environment, read by build_default_app; the service refuses to st
   INTERCEPTOR_NLI_MODEL_LOCK       JSON file {"sha256": ...} the model directory must match
   INTERCEPTOR_POLICY         policy file (default config/policy/default.yaml)
   INTERCEPTOR_FHIR_DIR       encounter bundles for the legacy /v1/verify endpoint (default fixtures/fhir)
+  INTERCEPTOR_NOTIFY_WEBHOOK_URL   https URL told about quarantined notes and unavailable verification (IDs only, optional)
 """
 
 import dataclasses
@@ -41,6 +42,7 @@ from .engine import VERIFIER_VERSION
 from .errors import InterceptionError, envelope, register_error_handlers
 from .interceptor import router as interceptor_router
 from .mtls import MtlsConfig
+from .notify import WebhookNotifier
 from .proxy import router as proxy_router
 from .ratelimit import RateLimiter
 
@@ -63,7 +65,7 @@ class VerifyRequest(BaseModel):
 
 
 def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_model=None, knowledge=None,
-               mtls=None, limiter=None, upstream=None, auth_mode="mtls"):
+               mtls=None, limiter=None, upstream=None, auth_mode="mtls", notifier=None):
     if auth_mode not in ("mtls", "bearer"):
         raise ValueError("auth_mode must be 'mtls' or 'bearer'")
     if auth_mode == "bearer" and verifier is None:
@@ -86,6 +88,7 @@ def create_app(*, policy_path, fhir_dir, store, pseudo_key, verifier=None, nli_m
     app.state.mtls = mtls if mtls is not None else MtlsConfig()  # empty registry: every clinical request is refused
     app.state.auth_mode = auth_mode  # "mtls" (both factors) or "bearer" (demo only, see build_default_app)
     app.state.limiter = limiter if limiter is not None else RateLimiter(60)
+    app.state.notifier = notifier  # None: nobody is told (see api/notify.py)
     register_error_handlers(app)
 
     @app.middleware("http")
@@ -256,6 +259,11 @@ def _load_nli(knowledge=None):
     raise RuntimeError("INTERCEPTOR_NLI_MODE must be 'none', 'local' or 'remote'")
 
 
+def _load_notifier():
+    url = os.environ.get("INTERCEPTOR_NOTIFY_WEBHOOK_URL")
+    return WebhookNotifier(url) if url else None
+
+
 def build_default_app():
     """Uvicorn factory: `uvicorn api.app:build_default_app --factory --host 127.0.0.1`."""
     from interceptor.store.postgres import PostgresAuditStore
@@ -288,4 +296,5 @@ def build_default_app():
         upstream=_load_upstream(),
         knowledge=knowledge,
         nli_model=_load_nli(knowledge),
+        notifier=_load_notifier(),
     )
