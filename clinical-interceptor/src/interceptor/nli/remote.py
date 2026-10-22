@@ -86,19 +86,28 @@ class RemoteNliScorer:
             raise RemoteNliError("the NLI service returned the wrong number of scores")
         return [self._one(row) for row in scores]
 
-    def warm_up(self, retries=None):
+    def warm_up(self, budget_seconds=None):
         """The same identical-sentence check the local scorer does, so a broken service fails at start-up.
 
         A service that cannot be reached is reported as unavailable rather than as broken: it may be down, or it
         may still be booting, and neither is a reason to refuse to start the interceptor. A service that answers
         wrongly is a fault, and that does stop the interceptor.
+
+        `budget_seconds` bounds this one check, so a start-up does not wait the whole per-request budget for a
+        service that is still booting. The first clinical request does that waiting instead, and the work it waits
+        for has already been started here.
         """
+        full_budget = self.budget_seconds
+        if budget_seconds is not None:
+            self.budget_seconds = min(full_budget, float(budget_seconds))
         try:
             scores = self.score("The patient has a fever.", "The patient has a fever.")
         except RemoteNliUnavailable as exc:
             raise RemoteNliUnavailable(f"the NLI service could not be reached: {exc}") from exc
         except RemoteNliError as exc:
             raise PipelineError(ErrorClass.POLICY_LOAD_FAILURE, f"NLI service is not usable: {exc}") from exc
+        finally:
+            self.budget_seconds = full_budget
         if max(scores, key=scores.get) != "entailment":
             raise PipelineError(ErrorClass.POLICY_LOAD_FAILURE, "NLI service failed its identical-sentence check")
         self.ready = True
@@ -153,19 +162,23 @@ class RemoteNliScorer:
 
 def build_scorer(endpoint: Optional[str], *, timeout_seconds: float, budget_seconds: Optional[float] = None,
                  token: Optional[str] = None, startup_retries: int = 40, retry_backoff_seconds: float = 1.5,
-                 warmup_retries: int = 3) -> RemoteNliScorer:
+                 warmup_budget_seconds: float = 5.0) -> RemoteNliScorer:
     """Builds a remote scorer.
 
     A service that answers wrongly is a fault and stops the interceptor. A service that cannot be reached is not:
     the interceptor starts, reports the model as unavailable, and every claim that needs the model fails closed
     while the rest of the service keeps working. The interceptor's availability must not depend on the model's.
+
+    The start-up check gets a short budget of its own. A service that is still loading its model has already been
+    woken by the attempt, so the first clinical request is the right place to wait for the rest of it: a cold start
+    of the interceptor should not sit in front of a cold start of the model.
     """
     if not endpoint:
         raise RuntimeError("INTERCEPTOR_NLI_MODE=remote needs INTERCEPTOR_NLI_ENDPOINT")
     scorer = RemoteNliScorer(endpoint, timeout_seconds=timeout_seconds, budget_seconds=budget_seconds, token=token,
                              startup_retries=startup_retries, retry_backoff_seconds=retry_backoff_seconds)
     try:
-        scorer.warm_up()
+        scorer.warm_up(budget_seconds=warmup_budget_seconds)
     except RemoteNliUnavailable:
         # The service is down or still booting. The first clinical request waits for it, and fails closed if it
         # never comes up. The warm-up is not retried for long here, so a cold start of the interceptor is quick.

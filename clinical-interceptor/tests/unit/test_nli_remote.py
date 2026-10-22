@@ -235,6 +235,25 @@ class FailureTests(unittest.TestCase):
         self.assertTrue(attempts)
         self.assertTrue(all(t == 2.0 for t in attempts))  # each call used the call timeout
 
+    def test_the_start_up_check_gets_a_short_budget_of_its_own(self):
+        """A cold interceptor must not sit in front of a cold model.
+
+        The start-up check is bounded, so the interceptor comes up quickly and the first clinical request is the
+        one that waits for the rest of the model's boot. The full budget is put back afterwards.
+        """
+        class DeadClient(FakeClient):
+            def post(self, url, json=None, headers=None, timeout=None):
+                raise OSError("connection refused")
+
+        s = RemoteNliScorer("http://nli.internal:8100", client=DeadClient(), timeout_seconds=2.0,
+                            budget_seconds=45.0, startup_retries=1000, retry_backoff_seconds=0.02)
+        started = time.monotonic()
+        with self.assertRaises(RemoteNliUnavailable):
+            s.warm_up(budget_seconds=0.15)
+        self.assertLess(time.monotonic() - started, 5.0)
+        self.assertEqual(s.budget_seconds, 45.0)  # restored, so a clinical request still gets the full budget
+        self.assertFalse(s.ready)
+
     def test_too_many_pairs_raises_before_any_request(self):
         s, client = scorer(ok_response([]))
         with self.assertRaises(RemoteNliError):
