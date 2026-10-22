@@ -29,8 +29,8 @@ class WebhookNotifier:
 
     def notify(self, event):
         body = json.dumps({k: event[k] for k in ALLOWED_FIELDS if k in event}).encode("utf-8")
-        request = urllib.request.Request(self.url, data=body, method="POST",
-                                         headers={"Content-Type": "application/json"})  # noqa: S310 (https only)
+        request = urllib.request.Request(self.url, data=body, method="POST",  # noqa: S310 (https only)
+                                         headers={"Content-Type": "application/json"})
         try:
             urllib.request.urlopen(request, timeout=self.timeout).close()  # noqa: S310 (https is checked in __init__)
         except Exception as exc:  # best effort: see the module note
