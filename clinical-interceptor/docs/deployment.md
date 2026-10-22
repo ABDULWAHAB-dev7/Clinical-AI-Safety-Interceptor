@@ -8,9 +8,13 @@ rebuilds both.
 |---|---|---|---|
 | `clinical-interceptor-api` | `clinical-interceptor/` | Python 3.12 serverless function (`api/index.py`) | `https://clinical-interceptor-api.vercel.app` |
 | `clinical-interceptor-web` | `clinical-interceptor/web/` | Next.js 16 on Node 24 | `https://clinical-interceptor-web.vercel.app` |
+| `clinical-interceptor-nli` | repository root | Container (`clinical-interceptor/nli_service/Dockerfile.vercel`) | `https://clinical-interceptor-nli.vercel.app` |
 
 The dashboard is the public face. The API is called only from the dashboard's server-side routes, never from a
-browser.
+browser. The NLI service is called only from the API.
+
+All three are connected to the same GitHub repository, so a push to `main` rebuilds all of them. The NLI service
+is declared as a service in the repository's `vercel.json`; see [nli-service.md](nli-service.md).
 
 ## What the deployment is
 
@@ -82,11 +86,22 @@ the note was blocked rather than checked, unless the NLI service is configured.
 
 ### The NLI model on Vercel
 
-The approved checkpoint is about 6 GB and a Vercel function may not exceed 250 MB, so the model cannot run inside
-the function. Run it as a separate service — `nli_service/` in this repository — and point
-`INTERCEPTOR_NLI_ENDPOINT` at it. It stays inside your own network, which is what the Gate G1 memo requires; a
-hosted endpoint operated by a third party is not allowed. The service needs about 4 GB of memory and a CPU with
-at least 8 threads to stay inside the 350 ms NLI budget.
+The approved checkpoint is about 750 MB and a Vercel function may not exceed 250 MB, so the model cannot run inside
+the function. It runs as its own container project, `clinical-interceptor-nli`, built from
+`clinical-interceptor/nli_service/Dockerfile.vercel`. The image bakes the approved checkpoint in and the build
+fails if a byte does not match the lock, so what runs is a checkpoint that can be checked rather than one that has
+to be trusted. The service stays inside your own account, which is what the Gate G1 memo requires; a hosted
+endpoint operated by a third party is not allowed. It needs about 4 GB of memory and a CPU with at least 8 threads
+to stay inside the 350 ms NLI budget.
+
+Set these on the API project:
+
+| Variable | Value |
+|---|---|
+| `INTERCEPTOR_NLI_MODE` | `remote` |
+| `INTERCEPTOR_NLI_ENDPOINT` | `https://clinical-interceptor-nli.vercel.app` |
+| `INTERCEPTOR_NLI_TOKEN` | the same token as `NLI_SERVICE_TOKEN` on the service |
+| `INTERCEPTOR_NLI_TIMEOUT_SECONDS` | `90` — a container that scales to zero has to boot before it can answer |
 
 ## Deploying a change
 
