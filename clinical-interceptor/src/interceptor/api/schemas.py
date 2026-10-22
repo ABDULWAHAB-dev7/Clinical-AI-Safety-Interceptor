@@ -111,6 +111,7 @@ class AuditReport(Strict):
     patient_pseudo_id: str
     overall_risk_severity: Severity
     pipeline_status: Literal["VERIFIED", "BLOCKED"]
+    hard_stop_rules: list[str] = []  # additive (docs/api-changes/2026-10-22-report-hard-stop-rules.md)
     counts: dict[str, int]
     hallucination_events: list[EventOut]
     attribution_spans: list[SpanOut]

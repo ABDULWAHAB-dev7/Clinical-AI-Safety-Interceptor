@@ -126,7 +126,8 @@ def _legacy_body(report, verdicts, policy):
         "delivered": delivered,
         "pipeline_status": report["pipeline_status"],
         "policy_version": policy.version,
-        "rules_fired": sorted({v["risk_rule"] for v in flagged if v.get("risk_rule")}),
+        "rules_fired": sorted({v["risk_rule"] for v in flagged if v.get("risk_rule")}
+                              | set(report.get("hard_stop_rules", []))),
         "errors": [],
         "verdicts": verdicts,
     }

@@ -18,6 +18,7 @@ from interceptor.core.claims import claim_id_for, decompose_claims, overall_seve
 from interceptor.core.entities import entity_from_model
 from interceptor.core.errors import PipelineError
 from interceptor.core.pipeline import PIPELINE_VERSION
+from interceptor.core.policy import R4
 from interceptor.core.verify import VerificationError, verify_claims
 from interceptor.store.records import EventRecord, StageRecord
 
@@ -179,7 +180,11 @@ def audit(state, *, patient_pid, note_id, verify_trace_ids, claims, results, att
         ))
 
     result_dicts = [r.model_dump(mode="json") for r in results]
-    pipeline_status = "BLOCKED" if any(e.risk_severity == "CRITICAL" for e in events) else "VERIFIED"
+    # Hard-stop R4 (architecture 7.2): a document with nothing to check is not released. A note that yields no claims
+    # has not been verified, so it is blocked rather than passed through as clean.
+    hard_stop_rules = [R4] if not claims else []
+    blocked = bool(hard_stop_rules) or any(e.risk_severity == "CRITICAL" for e in events)
+    pipeline_status = "BLOCKED" if blocked else "VERIFIED"
     report_id = str(uuid.uuid4())
     stage = StageRecord(
         stage="ATTRIBUTE",
@@ -191,6 +196,7 @@ def audit(state, *, patient_pid, note_id, verify_trace_ids, claims, results, att
             "overall_risk_severity": overall_severity(result_dicts),
             "counts": summary(result_dicts)["by_severity"],
             "pipeline_status": pipeline_status,
+            "hard_stop_rules": hard_stop_rules,
             "verify_trace_ids": [str(t) for t in verify_trace_ids],
             "results": result_dicts,
             "attribution": spans,
@@ -263,6 +269,7 @@ def report_view(report, replay):
         "patient_pseudo_id": report["patient_pseudo_id"],
         "overall_risk_severity": payload["overall_risk_severity"],
         "pipeline_status": payload["pipeline_status"],
+        "hard_stop_rules": payload.get("hard_stop_rules", []),
         "counts": payload["counts"],
         "hallucination_events": [
             {"event_id": e["event_id"], "claim_id": e["claim_id"], "category": e["category"],
