@@ -101,7 +101,16 @@ Set these on the API project:
 | `INTERCEPTOR_NLI_MODE` | `remote` |
 | `INTERCEPTOR_NLI_ENDPOINT` | `https://clinical-interceptor-nli.vercel.app` |
 | `INTERCEPTOR_NLI_TOKEN` | the same token as `NLI_SERVICE_TOKEN` on the service |
-| `INTERCEPTOR_NLI_TIMEOUT_SECONDS` | `90` — a container that scales to zero has to boot before it can answer |
+| `INTERCEPTOR_NLI_TIMEOUT_SECONDS` | `45` — the budget for an NLI call, retries included |
+| `INTERCEPTOR_NLI_CALL_TIMEOUT_SECONDS` | `10` — how long one call to the service may take |
+
+A container function scales to zero when idle, and booting the model takes longer than one scoring call, so the
+budget and the call timeout are two different numbers. The service is kept warm by a cron on its own project that
+pings its health endpoint every five minutes (`vercel.json` in the repository root).
+
+The interceptor does not depend on the model's availability. If the service is down, the interceptor stays up, the
+readiness report says `nli_unavailable`, and every claim that needs the model fails closed while the rest of the
+service keeps working.
 
 ## Deploying a change
 

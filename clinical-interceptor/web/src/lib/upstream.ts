@@ -19,7 +19,10 @@ import { mintBearer } from "./bearer";
 //
 // Both modes also need INTERCEPTOR_PSEUDO_KEY, so the route can derive patient_pseudo_id.
 
-export const TIMEOUT_MS = 10_000;
+// The interceptor may have to wait for the NLI service: a container that scales to zero has to boot, and booting
+// the model takes longer than one scoring call. The timeout here is longer than the interceptor's own budget for
+// one request, so the browser gets the interceptor's answer (a block, with the reason) rather than a bare 502.
+export const TIMEOUT_MS = Number(process.env.INTERCEPTOR_UPSTREAM_TIMEOUT_MS ?? 60_000);
 
 export class NotConfigured extends Error {}
 

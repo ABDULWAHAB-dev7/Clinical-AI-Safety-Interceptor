@@ -7,5 +7,6 @@
       "runtime": "container"
     }
   },
-  "rewrites": [{ "source": "/(.*)", "destination": { "service": "nli" } }]
+  "rewrites": [{ "source": "/(.*)", "destination": { "service": "nli" } }],
+  "crons": [{ "path": "/v1/health", "schedule": "*/5 * * * *" }]
 }
