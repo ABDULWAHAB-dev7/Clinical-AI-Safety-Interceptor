@@ -82,7 +82,7 @@ These block the parts not built. The code exposes an interface for each so it ca
 - **Missing resource types** produce per-assertion `VERIFICATION_ERROR`, but FHIR parse failures block the whole document (architecture 7.1 and 7.2 #3 differ). This build follows both: parse failures block, missing types affect only dependent assertions.
 - **Audit store:** DATABASE.md's PostgreSQL schema is built (`db/schema.sql`, Alembic revision 0001). The older JSONL log is gone.
 - **Latency budget** (800 ms p95) is not measured. No benchmark exists yet.
-- **Approver roles and override flow** (`/v1/override`) are not built.
+- **Approver roles.** The override and acknowledgment endpoints exist, and the reviewer is a pseudonym of a self-asserted signature, not a verified identity. Who may approve is an open decision (`docs/decisions.md`).
 
 ## Database layer (DATABASE.md)
 
@@ -117,12 +117,12 @@ Without `INTERCEPTOR_TEST_DSN`, the 8 database tests are skipped.
 - **The sentence `Chief complaint:` is treated as a section header**, so S1 starts at offset 17, as in the doc.
 - **Terminology is a placeholder.** The RxNorm-to-allergy-class mapping (amoxicillin to penicillin) covers only case-0001 and must be replaced by a governed lookup.
 - **The `v_hallucination_current` view** uses a LATERAL join, so events with no review show as `OPEN`. The doc's `DISTINCT ON` version would hide them.
-- **Row-level security, analyst roles, and grants** from section 3.6 are not in the schema. The triggers do enforce append-only.
+- **Roles, grants and row-level security** are in `db/roles.sql` (apply after the schema; tested in the CI database job). The triggers enforce append-only regardless.
 
 ### Not built
 
 - Encrypted object store for note text (`note_storage_uri` is nullable).
-- Retention jobs (6 years, assumed), access roles, and row-level security.
+- Automatic deletion. `scripts/retention.py` reports and exports records past the retention period (6 years assumed) and never deletes; removal is a separate step for the database owner.
 
 
 ## Pipeline to PostgreSQL
@@ -149,6 +149,9 @@ Every endpoint in API.md is built, except where an open decision is listed below
 | Verify | `POST /v1/interceptor/verify` | Built |
 | Audit | `POST /v1/interceptor/audit` (201, 200 replay, 409, 422, 503) | Built |
 | Reads | `GET /v1/interceptor/notes/{id}`, `GET /v1/interceptor/audit/reports/{id}` | Built |
+| Override | `POST /v1/interceptor/override` (a clinician reviews a critical finding; [record](docs/api-changes/2026-10-20-override.md)) | Built |
+| Acknowledge | `POST /v1/interceptor/acknowledge` (accept, edit or reject a warning), `GET /v1/interceptor/audit/reports/{id}/review-status` ([record](docs/api-changes/2026-10-22-acknowledge.md)) | Built |
+| Quarantine | `GET /v1/interceptor/quarantine`, plus a best-effort webhook (`INTERCEPTOR_NOTIFY_WEBHOOK_URL`) and a stored `FAILED` status when verification is unavailable ([record](docs/api-changes/2026-10-22-quarantine.md)) | Built |
 | Document check | `POST /v1/verify` (one call: decompose, verify, audit, on the shared engine; described in ARCHITECTURE 6.2, not in API.md) | Built, behind the same auth |
 | Errors | Envelope from 11.1, the codes in use from 11.2 | Built |
 | Headers | `X-Request-Id`, `X-Interceptor-Version`, `X-Interception-Time-MS`, `X-Interception-Status`, `X-Trace-Id`, `X-Upstream-Time-MS`, `RateLimit-*`, `Retry-After` | Built |
