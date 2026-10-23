@@ -14,8 +14,7 @@ npm run e2e          # Playwright against a production build, with axe (zero ser
 
 ## Design
 
-A minimal theme: one warm-neutral palette, hairline rules, light type, and color only for the three severities (each
-also has a word and an icon). Icons are [Hugeicons](https://hugeicons.com) (`@hugeicons/react` with the free core set,
+An Alden-style editorial theme: white canvas with one warm cream surface (`#f3f1eb`), ink `#28262a` text, pill buttons and badges, 16px cards, no shadows, tight negative letter-spacing. Sky blue (`#97cde5`) is a highlighter behind single words in headings (ink text on the mark, because blue text fails contrast), and sage (`#c8dfaa`) is the primary action. Inter and Source Serif 4 stand in for the reference's licensed Stk Bureau faces. The only other colors are the three clinical severities, which always carry a word and an icon. Icons are [Hugeicons](https://hugeicons.com) (`@hugeicons/react` with the free core set,
 thin 1.5 stroke, wrapped in `components/Icon.tsx`). Smooth scrolling is [Lenis](https://lenis.dev) (`components/SmoothScroll.tsx`,
 with a hairline reading-progress bar and `components/Reveal.tsx` fading sections in once). Lenis is off when the visitor asks
 for reduced motion, and nothing is hidden without scripts. Everything works under the strict CSP: no inline style

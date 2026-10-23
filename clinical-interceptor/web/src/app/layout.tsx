@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Inter, Source_Serif_4 } from "next/font/google";
 import { Shield01Icon } from "@hugeicons/core-free-icons";
 import { Icon } from "@/components/Icon";
 import { SiteNav } from "@/components/SiteNav";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// Inter and Source Serif 4 stand in for the reference's licensed Stk Bureau faces: sans for everything functional,
+// serif for the large editorial headlines only.
+const sans = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const serif = Source_Serif_4({ variable: "--font-source-serif", subsets: ["latin"], weight: ["400", "500"] });
+const mono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Clinical AI Safety Interceptor",
@@ -20,7 +23,7 @@ export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${sans.variable} ${serif.variable} ${mono.variable}`}>
       <body className="min-h-screen bg-paper text-ink antialiased">
         <SmoothScroll>
           <a
@@ -29,24 +32,22 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           >
             Skip to content
           </a>
-          <header className="sticky top-0 z-20 border-b border-line bg-paper/85 backdrop-blur">
-            <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
+          <header>
+            <div className="wrap flex items-center justify-between gap-2 py-4">
               <Link href="/" className="flex items-center gap-2.5 rounded-full">
                 <span className="grid size-8 place-items-center rounded-full border border-ink">
                   <Icon icon={Shield01Icon} size={16} />
                 </span>
-                <span className="sr-only text-sm font-medium tracking-tight sm:not-sr-only">Interceptor</span>
+                <span className="sr-only text-lg font-medium sm:not-sr-only">Interceptor</span>
               </Link>
               <SiteNav />
             </div>
           </header>
 
-          <main id="main" className="mx-auto max-w-5xl px-5 sm:px-8">
-            {children}
-          </main>
+          <main id="main">{children}</main>
 
-          <footer className="mt-32 border-t border-line">
-            <div className="mx-auto flex max-w-5xl flex-col gap-3 px-5 py-8 text-xs leading-5 text-muted sm:px-8 md:flex-row md:justify-between">
+          <footer className="band-cream mt-28">
+            <div className="wrap flex flex-col gap-3 py-10 text-xs leading-5 text-muted md:flex-row md:justify-between">
               <p>Clinical AI Safety Interceptor</p>
               <p className="max-w-xl md:text-right">
                 Synthetic data only. Not validated for clinical use, not a medical device, and not for patient care. Nothing

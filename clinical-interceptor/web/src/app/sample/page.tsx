@@ -10,13 +10,13 @@ export const metadata = { title: "Sample review · Clinical AI Safety Intercepto
 
 export default function Sample() {
   return (
-    <div className="space-y-16 pb-8 pt-16 sm:pt-24">
-      <header className="max-w-3xl space-y-6">
+    <div className="wrap space-y-16 pt-12 sm:pt-20">
+      <header className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
         <p className="eyebrow">Sample review</p>
-        <h1 className="text-4xl font-extralight leading-tight tracking-tight sm:text-6xl">
-          A note, checked line by line.
+        <h1 className="t-display">
+          A note, checked <span className="hl">line by line</span>.
         </h1>
-        <p className="max-w-xl text-lg font-light leading-8 text-muted">
+        <p className="lead max-w-xl">
           Each highlight shows whether the record supports the statement, contradicts it, or cannot confirm it, with the
           evidence behind the call.
         </p>
@@ -26,7 +26,7 @@ export default function Sample() {
         </p>
       </header>
 
-      <aside className="panel flex max-w-3xl gap-3 p-5 text-sm leading-6 text-muted">
+      <aside className="mx-auto flex max-w-3xl gap-3 rounded-2xl bg-cream p-6 text-sm leading-6 text-muted">
         <span className="mt-0.5 text-ink">
           <Icon icon={InformationCircleIcon} size={18} />
         </span>

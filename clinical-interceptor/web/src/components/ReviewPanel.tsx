@@ -94,7 +94,7 @@ export function ReviewPanel({ report }: { report: AuditReport }) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-2">
           <p className="eyebrow">Clinician review</p>
-          <h2 id="review-heading" className="text-2xl font-light tracking-tight sm:text-3xl">
+          <h2 id="review-heading" className="t-h2">
             Answer each finding
           </h2>
         </div>

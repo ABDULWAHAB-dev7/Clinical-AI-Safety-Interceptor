@@ -11,9 +11,9 @@ export function ReportView({ text, report, reviewable = false }: { text: string;
   return (
     <div className="space-y-20">
       <SummaryBar report={report} />
-      <Reveal as="section" className="space-y-6">
+      <Reveal as="section" className="panel space-y-6 p-6 sm:p-10">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="note-heading" className="text-2xl font-light tracking-tight sm:text-3xl">
+          <h2 id="note-heading" className="t-h2">
             Note
           </h2>
           <p className="text-sm text-muted">Select a highlight to see its evidence</p>
@@ -21,7 +21,7 @@ export function ReportView({ text, report, reviewable = false }: { text: string;
         <NoteViewer text={text} spans={viewSpans(report)} />
       </Reveal>
       <Reveal as="section" className="space-y-6">
-        <h2 id="events-heading" className="text-2xl font-light tracking-tight sm:text-3xl">
+        <h2 id="events-heading" className="t-h2">
           Events
         </h2>
         <EventList events={report.hallucination_events} />

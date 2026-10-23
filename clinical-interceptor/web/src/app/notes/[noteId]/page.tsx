@@ -10,15 +10,17 @@ export default async function NotePage({ params, searchParams }: PageProps<"/not
   const reportId = typeof query.report === "string" ? query.report : "";
 
   return (
-    <div className="space-y-16 pb-8 pt-16 sm:pt-24">
-      <header className="max-w-3xl space-y-6">
+    <div className="wrap space-y-16 pt-12 sm:pt-20">
+      <header className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
         <p className="eyebrow">Review</p>
-        <h1 className="text-4xl font-extralight leading-tight tracking-tight sm:text-6xl">Note review.</h1>
+        <h1 className="t-display">
+          Note <span className="hl">review</span>.
+        </h1>
       </header>
       {UUID.test(noteId) && UUID.test(reportId) ? (
         <LiveNote noteId={noteId} reportId={reportId} />
       ) : (
-        <p role="alert" className="text-muted">
+        <p role="alert" className="mx-auto max-w-2xl text-center text-muted">
           Open this page as <code className="font-mono text-ink">/notes/&lt;note id&gt;?report=&lt;report id&gt;</code>, with both ids
           from the audit response.
         </p>

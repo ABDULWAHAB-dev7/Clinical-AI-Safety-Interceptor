@@ -21,7 +21,7 @@ export function NoteViewer({ text, spans }: { text: string; spans: ViewSpan[] })
 
   return (
     <div className="space-y-5">
-      <p className="whitespace-pre-wrap text-lg font-light leading-9 sm:text-xl sm:leading-10" data-testid="note-text">
+      <p className="whitespace-pre-wrap text-lg leading-9 sm:text-xl sm:leading-10" data-testid="note-text">
         {segments.map((segment) => {
           if (segment.severity === null) return <span key={segment.start}>{segment.text}</span>;
           const severity = segment.severity;
@@ -36,7 +36,7 @@ export function NoteViewer({ text, spans }: { text: string; spans: ViewSpan[] })
               onClick={() => setActive(active === segment.start ? null : segment.start)}
               onFocus={() => setActive(segment.start)}
               onMouseEnter={() => setActive(segment.start)}
-              className={`mx-0.5 inline rounded-sm px-1 py-0.5 text-left align-baseline font-light transition-colors ${STYLE[severity]} ${active === segment.start ? "outline outline-1 outline-ink" : ""}`}
+              className={`mx-0.5 inline rounded-sm px-1 py-0.5 text-left align-baseline transition-colors ${STYLE[severity]} ${active === segment.start ? "outline outline-1 outline-ink" : ""}`}
             >
               {segment.text}
               <span className={`ml-1.5 align-middle text-[0.6rem] font-medium uppercase tracking-[0.12em] ${LABEL[severity]}`}>

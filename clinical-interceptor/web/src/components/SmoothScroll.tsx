@@ -11,7 +11,7 @@ function Progress() {
   });
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-30 h-px bg-transparent" aria-hidden="true">
-      <div ref={bar} className="progress-bar h-px w-full bg-ink" />
+      <div ref={bar} className="progress-bar h-px w-full bg-sky" />
     </div>
   );
 }

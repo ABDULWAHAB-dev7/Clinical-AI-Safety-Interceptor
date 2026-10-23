@@ -13,7 +13,7 @@ export function SummaryBar({ report }: { report: AuditReport }) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-2">
           <p className="eyebrow">Result</p>
-          <h2 id="summary-heading" className="text-3xl font-light tracking-tight sm:text-4xl">
+          <h2 id="summary-heading" className="t-h1">
             {blocked ? "Held back for review" : "Cleared by the record"}
           </h2>
         </div>
@@ -32,7 +32,7 @@ export function SummaryBar({ report }: { report: AuditReport }) {
               </span>
               {SEVERITY_LABEL[severity]}
             </dt>
-            <dd className={`mt-3 text-5xl font-extralight tabular-nums sm:text-6xl ${NUMBER[severity]}`} data-testid={`count-${severity}`}>
+            <dd className={`mt-3 text-5xl font-normal tabular-nums tracking-[-0.04em] sm:text-6xl`} data-testid={`count-${severity}`}>
               {report.counts[severity] ?? 0}
             </dd>
           </div>
