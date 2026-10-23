@@ -1,4 +1,5 @@
 import { shortPatientId } from "@/lib/report";
+import { limited } from "@/lib/guard";
 import { call, config, NotConfigured, problem } from "@/lib/upstream";
 
 // Reads a saved note and report by id. The only read path the dashboard uses. The browser never holds a certificate
@@ -10,6 +11,8 @@ export const dynamic = "force-dynamic";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(request: Request) {
+  const over = limited(request, "read");
+  if (over) return over;
   let cfg;
   try {
     cfg = config();

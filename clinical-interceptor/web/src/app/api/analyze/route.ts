@@ -1,5 +1,6 @@
 import { analyze } from "@/lib/analyze";
 import { MAX_NOTE_CHARS } from "@/lib/analyze-limits";
+import { limited, readJson } from "@/lib/guard";
 import { patientById } from "@/lib/patients";
 import { config, NotConfigured, problem } from "@/lib/upstream";
 
@@ -10,12 +11,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return problem(400, "BAD_REQUEST", "The request body must be JSON.");
-  }
+  const over = limited(request, "analyze");
+  if (over) return over;
+  const parsed = await readJson(request);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.body;
   const { text, patient } = (body ?? {}) as { text?: unknown; patient?: unknown };
   if (typeof text !== "string" || text.trim().length === 0) {
     return problem(400, "BAD_REQUEST", "Paste a note first.");

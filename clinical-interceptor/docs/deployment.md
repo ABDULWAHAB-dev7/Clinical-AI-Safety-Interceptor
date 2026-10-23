@@ -48,6 +48,10 @@ Do not put real records or real PHI in it.
 | `INTERCEPTOR_PSEUDO_KEY` | The same value as the API | The dashboard derives `patient_pseudo_id` itself. |
 | `INTERCEPTOR_AUTH_MODE` | `bearer` | Selects the token minting path over the mTLS path. |
 
+Optional, also on `clinical-interceptor-web`: `DASHBOARD_RATE_ANALYZE_PER_MINUTE` (default 10),
+`DASHBOARD_RATE_REVIEW_PER_MINUTE` (30), `DASHBOARD_RATE_READ_PER_MINUTE` (60) and `DASHBOARD_MAX_BODY_BYTES`
+(32768). They limit each visitor; see [security-checklist.md](security-checklist.md).
+
 The signing key and the public key are one pair. The private key never leaves the server: it is an environment
 variable, not a file in the repository. `.vercelignore` excludes `*.pem` and `.env*` from every upload.
 

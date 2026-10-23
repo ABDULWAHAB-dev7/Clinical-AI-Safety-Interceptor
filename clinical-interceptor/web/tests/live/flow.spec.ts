@@ -69,7 +69,7 @@ test("analyse a note, answer a warning, then override the critical finding from 
 
 test("an invalid note id shows the instructions, not an error page", async ({ page }) => {
   await page.goto("/notes/not-a-uuid");
-  await expect(page.getByRole("alert")).toContainText("Open this page as");
+  await expect(page.getByRole("alert").filter({ hasText: "Open this page as" })).toBeVisible();
 });
 
 test("a note that is too long is refused before it is sent", async ({ page }) => {

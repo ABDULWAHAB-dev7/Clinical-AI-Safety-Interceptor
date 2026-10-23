@@ -1,3 +1,4 @@
+import { limited } from "@/lib/guard";
 import { call, config, NotConfigured, problem } from "@/lib/upstream";
 
 // Which findings of a report still wait for a clinician, and whether the note is ready to sign.
@@ -8,6 +9,8 @@ export const dynamic = "force-dynamic";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(request: Request) {
+  const over = limited(request, "read");
+  if (over) return over;
   const reportId = new URL(request.url).searchParams.get("reportId") ?? "";
   if (!UUID.test(reportId)) return problem(400, "BAD_REQUEST", "reportId must be a UUID.");
 

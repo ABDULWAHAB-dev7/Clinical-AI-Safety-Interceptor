@@ -1,3 +1,4 @@
+import { limited } from "@/lib/guard";
 import { shortPatientId } from "@/lib/report";
 import { call, config, NotConfigured, problem } from "@/lib/upstream";
 
@@ -16,7 +17,9 @@ interface QuarantineNote {
   blocked_at: string;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const over = limited(request, "read");
+  if (over) return over;
   let cfg;
   try {
     cfg = config(["interceptor:read"]);

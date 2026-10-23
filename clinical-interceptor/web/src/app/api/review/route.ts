@@ -1,3 +1,4 @@
+import { limited, readJson } from "@/lib/guard";
 import { call, config, NotConfigured, problem } from "@/lib/upstream";
 
 // Records a clinician's answer to one finding: accept, edit or reject a warning, or override a critical finding. The
@@ -10,12 +11,11 @@ export const dynamic = "force-dynamic";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(request: Request) {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return problem(400, "BAD_REQUEST", "The request body must be JSON.");
-  }
+  const over = limited(request, "review");
+  if (over) return over;
+  const parsed = await readJson(request);
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.body;
   const { action, reportId, spanId, comment, signature } = (body ?? {}) as Record<string, unknown>;
   if (typeof reportId !== "string" || !UUID.test(reportId) || typeof spanId !== "string" || !UUID.test(spanId)) {
     return problem(400, "BAD_REQUEST", "reportId and spanId must be UUIDs.");
