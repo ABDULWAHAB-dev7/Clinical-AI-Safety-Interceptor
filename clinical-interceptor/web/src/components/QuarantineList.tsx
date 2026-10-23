@@ -55,7 +55,7 @@ export function QuarantineList() {
   }
 
   return (
-    <div className="overflow-x-auto" data-lenis-prevent-wheel>
+    <div className="relative overflow-x-auto" data-lenis-prevent-wheel>
       <table className="w-full min-w-[34rem] border-collapse text-left text-sm">
         <caption className="sr-only">Notes held for review</caption>
         <thead>

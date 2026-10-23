@@ -60,7 +60,7 @@ export async function analyze(cfg: Config, patient: PatientContext, text: string
 
   if (claims.length === 0) {
     return Response.json(
-      { note_text: text, report: null, message: "No checkable statements were found in this note." },
+      { note_text: text, report: null, message: "No checkable statements were found, so this note was not checked and nothing was released." },
       { headers: { "Cache-Control": "no-store" } },
     );
   }

@@ -21,7 +21,7 @@ export function EventList({ events }: { events: HallucinationEvent[] }) {
   }
 
   return (
-    <div className="overflow-x-auto" data-lenis-prevent-wheel>
+    <div className="relative overflow-x-auto" data-lenis-prevent-wheel>
       <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
         <caption className="sr-only">Hallucination events</caption>
         <thead>

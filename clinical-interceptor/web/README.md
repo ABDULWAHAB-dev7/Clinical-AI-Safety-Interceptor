@@ -53,6 +53,21 @@ Extra server variables for analysis: `INTERCEPTOR_PSEUDO_KEY` (the interceptor's
 `interceptor:read`. A statement the rules cannot settle needs the NLI model. Until one is configured, that note is
 blocked with `INTERCEPT_VERIFIER_UNAVAILABLE` and nothing is released.
 
+## Live flow test (needs an interceptor)
+
+`tests/live/` drives the whole clinician journey in a real browser against a real interceptor: analyse a note, answer a
+warning, open the held note from the quarantine list, check the pasted text against its hash, override the critical
+finding, and confirm the note leaves the quarantine. It also visits every page and state at phone and desktop width and
+fails on console errors, CSP violations, failed requests, horizontal scroll and serious axe violations. It only runs when
+`LIVE_FLOW=1`, and it expects a fresh interceptor (notes are identified by their text, so a second run against the same
+interceptor sees the notes of the first). Start the dashboard against a throwaway interceptor, then:
+
+```bash
+LIVE_FLOW=1 npx playwright test -c playwright.live.config.ts
+```
+
+`LIVE_BASE_URL` (default `http://127.0.0.1:3200`) is the dashboard's address.
+
 ## How the browser stays away from credentials
 
 `src/app/api/interceptor/route.ts` is the only code that calls the interceptor. It reads these server-side variables

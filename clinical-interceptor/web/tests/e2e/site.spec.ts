@@ -18,6 +18,13 @@ test.describe("the site", () => {
     await expect(page).toHaveURL(/\/analyze$/);
   });
 
+  test("a missing page gets a 404 and the site's own not-found page", async ({ page }) => {
+    const response = await page.goto("/no-such-page");
+    expect(response?.status()).toBe(404);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Page not found");
+    await expect(page.getByRole("link", { name: "Back to the overview" })).toBeVisible();
+  });
+
   test("the main navigation marks the current page", async ({ page }) => {
     await page.goto("/quarantine");
     await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Quarantine" })).toHaveAttribute("aria-current", "page");

@@ -57,6 +57,7 @@ export async function POST(request: Request) {
   if (result.status === 401 || result.status === 403) {
     return problem(502, "UPSTREAM_REFUSED", "The interceptor refused this dashboard's credentials.");
   }
+  if (result.status === 404) return problem(404, "NOT_FOUND", "No such report, or that finding is not in it.");
   if (result.status === 409) {
     return problem(409, "NOT_ALLOWED", "That finding was already answered, or it cannot be answered this way.");
   }
