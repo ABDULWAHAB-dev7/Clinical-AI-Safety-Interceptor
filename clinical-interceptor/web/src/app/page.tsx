@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { Reveal } from "@/components/Reveal";
+import { DotField, HeroBackdrop, PulseLine, Rings } from "@/components/Visuals";
 
 const STEPS = [
   { icon: File01Icon, title: "Extract", text: "The note is split into single statements. Each one keeps its exact position in the text." },
@@ -34,7 +35,9 @@ const PRINCIPLES = [
 export default function Home() {
   return (
     <>
-      <section className="wrap flex flex-col items-center gap-8 pb-20 pt-16 text-center sm:pt-24">
+      <section className="relative isolate overflow-hidden">
+        <HeroBackdrop />
+        <div className="wrap flex flex-col items-center gap-8 pb-28 pt-16 text-center sm:pt-24">
         <p className="eyebrow">Clinical AI safety</p>
         <h1 className="t-display max-w-3xl">
           Every statement, checked against <span className="hl">the record</span>.
@@ -50,6 +53,7 @@ export default function Home() {
           <Link href="/sample" className="btn btn-line">
             See a sample review
           </Link>
+        </div>
         </div>
       </section>
 
@@ -97,7 +101,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="wrap flex flex-col items-center gap-14 py-24 text-center" aria-labelledby="how-heading">
+      <section className="wrap flex flex-col items-center gap-14 pb-24 pt-10 text-center" aria-labelledby="how-heading">
+        <PulseLine className="h-12 max-w-3xl" />
         <Reveal className="space-y-5">
           <p className="eyebrow">How it works</p>
           <h2 id="how-heading" className="t-h1 serif max-w-2xl">
@@ -115,8 +120,10 @@ export default function Home() {
         </ol>
       </section>
 
-      <section className="band-cream py-24" aria-labelledby="outcomes-heading">
-        <div className="wrap flex flex-col items-center gap-14 text-center">
+      <section className="band-cream relative overflow-hidden py-24" aria-labelledby="outcomes-heading">
+        <Rings className="absolute -left-40 top-10 hidden size-[34rem] lg:block" />
+        <Rings className="absolute -right-48 bottom-0 hidden size-[28rem] opacity-80 lg:block" />
+        <div className="wrap relative flex flex-col items-center gap-14 text-center">
           <Reveal className="space-y-5">
             <p className="eyebrow">Outcomes</p>
             <h2 id="outcomes-heading" className="t-h1 serif max-w-2xl">
@@ -137,7 +144,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="wrap flex flex-col items-center gap-16 py-24 text-center" aria-labelledby="principles-heading">
+      <section className="relative" aria-labelledby="principles-heading">
+        <DotField className="absolute inset-0 -z-10" />
+        <div className="wrap flex flex-col items-center gap-16 py-24 text-center">
         <Reveal className="space-y-5">
           <p className="eyebrow">Principles</p>
           <h2 id="principles-heading" className="t-h1 serif">
@@ -155,6 +164,7 @@ export default function Home() {
               <p className="text-sm text-muted">{item.text}</p>
             </Reveal>
           ))}
+        </div>
         </div>
       </section>
 

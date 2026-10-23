@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Geist_Mono, Inter, Source_Serif_4 } from "next/font/google";
-import { Shield01Icon } from "@hugeicons/core-free-icons";
-import { Icon } from "@/components/Icon";
+import { Logo } from "@/components/Logo";
 import { SiteNav } from "@/components/SiteNav";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import "./globals.css";
@@ -34,17 +32,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </a>
           <header>
             <div className="wrap flex items-center justify-between gap-2 py-4">
-              <Link href="/" className="flex items-center gap-2.5 rounded-full">
-                <span className="grid size-8 place-items-center rounded-full border border-ink">
-                  <Icon icon={Shield01Icon} size={16} />
-                </span>
-                <span className="sr-only text-lg font-medium sm:not-sr-only">Interceptor</span>
-              </Link>
+              <Logo />
               <SiteNav />
             </div>
           </header>
 
-          <main id="main">{children}</main>
+          <main id="main" className="overflow-x-clip">{children}</main>
 
           <footer className="band-cream mt-28">
             <div className="wrap flex flex-col gap-3 py-10 text-xs leading-5 text-muted md:flex-row md:justify-between">

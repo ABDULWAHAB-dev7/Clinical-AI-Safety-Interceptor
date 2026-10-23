@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/PageHeader";
 import { LiveNote } from "@/components/LiveNote";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -11,12 +12,7 @@ export default async function NotePage({ params, searchParams }: PageProps<"/not
 
   return (
     <div className="wrap space-y-16 pt-12 sm:pt-20">
-      <header className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
-        <p className="eyebrow">Review</p>
-        <h1 className="t-display">
-          Note <span className="hl">review</span>.
-        </h1>
-      </header>
+      <PageHeader eyebrow="Review" title={<>Note <span className="hl">review</span>.</>} />
       {UUID.test(noteId) && UUID.test(reportId) ? (
         <LiveNote noteId={noteId} reportId={reportId} />
       ) : (
